@@ -6,3 +6,289 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum Units {
+  metric
+  imperial
+}
+
+enum Sex {
+  male
+  female
+  other
+  unknown
+}
+
+enum ActivityLevel {
+  sedentary
+  light
+  moderate
+  high
+}
+
+enum DietPreference {
+  balanced
+  lowCarb
+  keto
+}
+
+enum ThemeMode {
+  system
+  light
+  dark
+}
+
+enum FoodEntryType {
+  quick_add
+  manual
+  photo
+  ai_text
+}
+
+enum ExtraIntensity {
+  low
+  moderate
+  high
+}
+
+enum MediaType {
+  body_fat_photo
+  food_photo
+  other
+}
+
+model User {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  provider       String?
+  email          String?  @unique
+  displayName    String?
+  authProviderId String?
+
+  profile         Profile?
+  settings        Settings?
+  weighIns        WeighIn[]
+  foodTemplates   FoodTemplate[]
+  mealGroups      MealGroup[]
+  foodEntries     FoodEntry[]
+  waterLogs       WaterLog[]
+  dayPlans        DayPlan[]
+  plannedExercises PlannedExercise[]
+  topSetEntries   TopSetEntry[]
+  completionLogs  CompletionLog[]
+  extraActivities ExtraActivity[]
+  media           Media[]
+}
+
+model Profile {
+  userId             String           @id
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  units              Units
+  weightKg           Float?
+  heightCm           Float?
+  age                Int?
+  sex                Sex
+  bodyFatPct         Float?
+  activityLevel      ActivityLevel
+  baselineTDEE       Int?
+  baselineTDEEAuto   Int?
+  targetWeightKg     Float?
+  weeklyRateKg       Float?
+  weeklyTrainingGoal Int?
+  proteinGoalG       Int?
+  fatGoalG           Int?
+  fiberGoalG         Int?
+  waterGoalLiters    Float?
+  waterGoalAuto      Float?
+  kcalTargetAuto     Int?
+  kcalTargetOverride Int?
+  dietPreference     DietPreference
+  timezone           String?
+  hasOnboarded       Boolean          @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WeighIn {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dateISO   DateTime @db.Date
+  weightKg  Float
+  note      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateISO])
+  @@index([userId, dateISO])
+}
+
+model FoodTemplate {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  name      String
+  kcal      Int
+  protein   Float
+  fat       Float
+  carbs     Float
+  fiber     Float
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MealGroup {
+  id         String     @id @default(uuid())
+  userId     String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  dateISO    DateTime   @db.Date
+  title      String
+  isExpanded Boolean    @default(true)
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  foodEntries FoodEntry[]
+}
+
+model FoodEntry {
+  id         String        @id @default(uuid())
+  userId     String
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  dateISO    DateTime      @db.Date
+  name       String
+  kcal       Int
+  protein    Float
+  fat        Float
+  carbs      Float
+  fiber      Float
+  multiplier Float         @default(1)
+  type       FoodEntryType
+  groupId    String?
+  note       String?
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group MealGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+model WaterLog {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dateISO   DateTime @db.Date
+  amountMl  Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateISO])
+}
+
+model DayPlan {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String
+  emoji     String
+
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises PlannedExercise[]
+}
+
+model PlannedExercise {
+  id            String   @id @default(uuid())
+  userId        String
+  dayId         String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  name          String
+  workingWeight Float
+  targetRepsMin Int
+  targetRepsMax Int
+  notes         String?
+  pinned        Boolean  @default(false)
+
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day           DayPlan      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  topSetEntries TopSetEntry[]
+
+  @@index([userId, dayId])
+}
+
+model TopSetEntry {
+  id         String   @id @default(uuid())
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  dateISO    DateTime @db.Date
+  dayId      String
+  exerciseId String
+  weight     Float
+  reps       Int
+  sets       Int
+  workSets   Json
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day      DayPlan         @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exercise PlannedExercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([userId, dateISO])
+}
+
+model CompletionLog {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dateISO   DateTime @db.Date
+  dayId     String
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day  DayPlan @relation(fields: [dayId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateISO, dayId])
+}
+
+model ExtraActivity {
+  id        String         @id @default(uuid())
+  userId    String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  dateISO   DateTime       @db.Date
+  type      String
+  minutes   Int
+  intensity ExtraIntensity
+  kcalEst   Int
+  notes     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Media {
+  id        String    @id @default(uuid())
+  userId    String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  type      MediaType
+  uri       String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Settings {
+  userId            String    @id
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  themeMode         ThemeMode @default(system)
+  notificationPrefs Json?
+  healthConnected   Boolean   @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

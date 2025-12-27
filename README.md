@@ -17,3 +17,9 @@ cp .env.example .env
 pnpm prisma:generate
 pnpm prisma:studio
 ```
+
+## Step 2 Migration
+
+```bash
+pnpm prisma:migrate
+```
