@@ -1,6 +1,12 @@
 import fastify, { FastifyInstance } from 'fastify';
 import { env } from './config/env';
+import devAuth from './plugins/dev-auth';
 import healthPlugin from './plugins/health';
+import profileRoutes from './modules/profile/routes';
+import foodRoutes from './modules/food/routes';
+import waterRoutes from './modules/water/routes';
+import trainingRoutes from './modules/training/routes';
+import analyticsRoutes from './modules/analytics/routes';
 
 export function buildApp(): FastifyInstance {
   const logger = env.DEV_LOG
@@ -15,7 +21,13 @@ export function buildApp(): FastifyInstance {
 
   const app = fastify({ logger });
 
+  devAuth(app);
   app.register(healthPlugin);
+  app.register(profileRoutes);
+  app.register(foodRoutes, { prefix: '/food' });
+  app.register(waterRoutes, { prefix: '/water' });
+  app.register(trainingRoutes, { prefix: '/training' });
+  app.register(analyticsRoutes, { prefix: '/analytics' });
 
   return app;
 }

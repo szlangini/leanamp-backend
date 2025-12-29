@@ -32,6 +32,12 @@ enum DietPreference {
   keto
 }
 
+enum GoalMode {
+  cut
+  maintain
+  bulk
+}
+
 enum ThemeMode {
   system
   light
@@ -66,47 +72,55 @@ model User {
   displayName    String?
   authProviderId String?
 
-  profile         Profile?
-  settings        Settings?
-  weighIns        WeighIn[]
-  foodTemplates   FoodTemplate[]
-  mealGroups      MealGroup[]
-  foodEntries     FoodEntry[]
-  waterLogs       WaterLog[]
-  dayPlans        DayPlan[]
+  profile          Profile?
+  settings         Settings?
+  weighIns         WeighIn[]
+  foodTemplates    FoodTemplate[]
+  mealGroups       MealGroup[]
+  foodEntries      FoodEntry[]
+  waterLogs        WaterLog[]
+  dayPlans         DayPlan[]
   plannedExercises PlannedExercise[]
-  topSetEntries   TopSetEntry[]
-  completionLogs  CompletionLog[]
-  extraActivities ExtraActivity[]
-  media           Media[]
+  topSetEntries    TopSetEntry[]
+  completionLogs   CompletionLog[]
+  extraActivities  ExtraActivity[]
+  media            Media[]
 }
 
 model Profile {
-  userId             String           @id
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
-  units              Units
-  weightKg           Float?
-  heightCm           Float?
-  age                Int?
-  sex                Sex
-  bodyFatPct         Float?
-  activityLevel      ActivityLevel
-  baselineTDEE       Int?
-  baselineTDEEAuto   Int?
-  targetWeightKg     Float?
-  weeklyRateKg       Float?
-  weeklyTrainingGoal Int?
-  proteinGoalG       Int?
-  fatGoalG           Int?
-  fiberGoalG         Int?
-  waterGoalLiters    Float?
-  waterGoalAuto      Float?
-  kcalTargetAuto     Int?
-  kcalTargetOverride Int?
-  dietPreference     DietPreference
-  timezone           String?
-  hasOnboarded       Boolean          @default(false)
+  userId                     String         @id
+  createdAt                  DateTime       @default(now())
+  updatedAt                  DateTime       @updatedAt
+  units                      Units
+  weightKg                   Float?
+  heightCm                   Float?
+  age                        Int?
+  sex                        Sex
+  bodyFatPct                 Float?
+  activityLevel              ActivityLevel
+  baselineTDEE               Int?
+  baselineTDEEAuto           Int?
+  targetWeightKg             Float?
+  goalMode                   GoalMode       @default(maintain)
+  targetRateKgPerWeek        Float?         @default(0)
+  autoAdjustKcal             Int            @default(0)
+  weeklyAdjustLog            Json?
+  lastAdjustedWeekKey        String?
+  neatFactor                 Float          @default(0.8)
+  baselineSteps              Int            @default(7000)
+  manualCalorieTargetEnabled Boolean        @default(false)
+  manualCalorieTargetKcal    Int?
+  weeklyTrainingGoal         Int?
+  proteinGoalG               Int?
+  fatGoalG                   Int?
+  fiberGoalG                 Int?
+  waterGoalLiters            Float?
+  waterGoalAuto              Float?
+  kcalTargetAuto             Int?
+  kcalTargetOverride         Int?
+  dietPreference             DietPreference
+  timezone                   String?
+  hasOnboarded               Boolean        @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -142,13 +156,13 @@ model FoodTemplate {
 }
 
 model MealGroup {
-  id         String     @id @default(uuid())
+  id         String   @id @default(uuid())
   userId     String
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  dateISO    DateTime   @db.Date
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  dateISO    DateTime @db.Date
   title      String
-  isExpanded Boolean    @default(true)
+  isExpanded Boolean  @default(true)
 
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   foodEntries FoodEntry[]
@@ -196,8 +210,10 @@ model DayPlan {
   title     String
   emoji     String
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises PlannedExercise[]
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises      PlannedExercise[]
+  topSetEntries  TopSetEntry[]
+  completionLogs CompletionLog[]
 }
 
 model PlannedExercise {
@@ -213,8 +229,8 @@ model PlannedExercise {
   notes         String?
   pinned        Boolean  @default(false)
 
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  day           DayPlan      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  day           DayPlan       @relation(fields: [dayId], references: [id], onDelete: Cascade)
   topSetEntries TopSetEntry[]
 
   @@index([userId, dayId])

@@ -13,7 +13,7 @@
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
     "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev --name init_models",
+    "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
