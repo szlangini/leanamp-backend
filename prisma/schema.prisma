@@ -85,6 +85,7 @@ model User {
   completionLogs   CompletionLog[]
   extraActivities  ExtraActivity[]
   media            Media[]
+  sessions         Session[]
 }
 
 model Profile {
@@ -307,4 +308,30 @@ model Settings {
   healthConnected   Boolean   @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id          String    @id @default(uuid())
+  userId      String
+  refreshHash String    @unique
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  deviceName  String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model EmailOtp {
+  id         String    @id @default(uuid())
+  email      String
+  codeHash   String
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+
+  @@index([email, expiresAt])
 }

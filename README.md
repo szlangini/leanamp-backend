@@ -97,6 +97,27 @@ curl "localhost:3001/analytics/strength-trends?range=30" \
   -H "x-dev-user: 11111111-1111-1111-1111-111111111111"
 ```
 
+## Step 6 Auth (Email OTP + JWT)
+
+```bash
+# after schema change
+pnpm prisma:generate
+pnpm prisma:migrate -- --name auth_sessions_otps
+
+# .env: AUTH_MODE=jwt, DEV_OTP_ECHO=true
+
+curl -X POST localhost:3001/auth/email/start \
+  -H "content-type: application/json" \
+  -d '{"email":"a@a.de"}'
+
+curl -X POST localhost:3001/auth/email/verify \
+  -H "content-type: application/json" \
+  -d '{"email":"a@a.de","code":"REPLACE_CODE"}'
+
+curl localhost:3001/profile \
+  -H "authorization: Bearer REPLACE_ACCESS_TOKEN"
+```
+
 ## OpenAPI
 
 ```bash

@@ -1,101 +1,98 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { prisma } from '../../db/prisma';
+import { getAuthContext, AuthContext } from '../../test/auth';
 
 const run = process.env.DATABASE_URL ? describe : describe.skip;
 
 run('water api', () => {
-  const userId = '33333333-3333-3333-3333-333333333333';
-  const headers = { 'x-dev-user': userId };
+  const email = 'water-test@leanamp.local';
+  let app: ReturnType<typeof buildApp>;
+  let auth: AuthContext;
 
   beforeAll(async () => {
     await prisma.$connect();
+    await prisma.emailOtp.deleteMany({ where: { email } });
+    await prisma.user.deleteMany({ where: { email } });
+    app = buildApp();
+    auth = await getAuthContext(app, email);
   });
 
   beforeEach(async () => {
-    await prisma.user.deleteMany({ where: { id: userId } });
+    await prisma.waterLog.deleteMany({ where: { userId: auth.userId } });
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany({ where: { id: userId } });
+    await prisma.waterLog.deleteMany({ where: { userId: auth.userId } });
+    await prisma.user.deleteMany({ where: { id: auth.userId } });
+    await prisma.emailOtp.deleteMany({ where: { email } });
+    await app.close();
     await prisma.$disconnect();
   });
 
   it('gets default water and upserts', async () => {
-    const app = buildApp();
+    const getResponse = await app.inject({
+      method: 'GET',
+      url: '/water?date=2024-01-03',
+      headers: auth.headers
+    });
 
-    try {
-      const getResponse = await app.inject({
-        method: 'GET',
-        url: '/water?date=2024-01-03',
-        headers
-      });
+    expect(getResponse.statusCode).toBe(200);
+    expect(getResponse.json()).toEqual({
+      dateISO: '2024-01-03',
+      amountMl: 0
+    });
 
-      expect(getResponse.statusCode).toBe(200);
-      expect(getResponse.json()).toEqual({
-        dateISO: '2024-01-03',
-        amountMl: 0
-      });
-
-      const postResponse = await app.inject({
-        method: 'POST',
-        url: '/water',
-        headers,
-        payload: {
-          dateISO: '2024-01-03',
-          amountMl: 1200
-        }
-      });
-
-      expect(postResponse.statusCode).toBe(200);
-      expect(postResponse.json()).toEqual({
+    const postResponse = await app.inject({
+      method: 'POST',
+      url: '/water',
+      headers: auth.headers,
+      payload: {
         dateISO: '2024-01-03',
         amountMl: 1200
-      });
+      }
+    });
 
-      const getUpdated = await app.inject({
-        method: 'GET',
-        url: '/water?date=2024-01-03',
-        headers
-      });
+    expect(postResponse.statusCode).toBe(200);
+    expect(postResponse.json()).toEqual({
+      dateISO: '2024-01-03',
+      amountMl: 1200
+    });
 
-      expect(getUpdated.statusCode).toBe(200);
-      expect(getUpdated.json()).toEqual({
-        dateISO: '2024-01-03',
-        amountMl: 1200
-      });
-    } finally {
-      await app.close();
-    }
+    const getUpdated = await app.inject({
+      method: 'GET',
+      url: '/water?date=2024-01-03',
+      headers: auth.headers
+    });
+
+    expect(getUpdated.statusCode).toBe(200);
+    expect(getUpdated.json()).toEqual({
+      dateISO: '2024-01-03',
+      amountMl: 1200
+    });
   });
 
   it('rejects invalid water payloads', async () => {
-    const app = buildApp();
+    const getResponse = await app.inject({
+      method: 'GET',
+      url: '/water?date=2024-1-03',
+      headers: auth.headers
+    });
 
-    try {
-      const getResponse = await app.inject({
-        method: 'GET',
-        url: '/water?date=2024-1-03',
-        headers
-      });
+    expect(getResponse.statusCode).toBe(400);
+    expect(getResponse.json().error.code).toBe('bad_request');
 
-      expect(getResponse.statusCode).toBe(400);
-      expect(getResponse.json().error.code).toBe('bad_request');
+    const postResponse = await app.inject({
+      method: 'POST',
+      url: '/water',
+      headers: auth.headers,
+      payload: {
+        dateISO: '2024-01-03',
+        amountMl: -10
+      }
+    });
 
-      const postResponse = await app.inject({
-        method: 'POST',
-        url: '/water',
-        headers,
-        payload: {
-          dateISO: '2024-01-03',
-          amountMl: -10
-        }
-      });
-
-      expect(postResponse.statusCode).toBe(400);
-      expect(postResponse.json().error.code).toBe('bad_request');
-    } finally {
-      await app.close();
-    }
+    expect(postResponse.statusCode).toBe(400);
+    expect(postResponse.json().error.code).toBe('bad_request');
   });
 });

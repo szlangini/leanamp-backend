@@ -1,0 +1,10 @@
+process.env.NODE_ENV = process.env.NODE_ENV ?? 'test';
+process.env.AUTH_MODE = 'jwt';
+process.env.DEV_OTP_ECHO = 'true';
+process.env.JWT_ACCESS_SECRET = 'test_access_secret';
+process.env.JWT_REFRESH_SECRET = 'test_refresh_secret';
+process.env.JWT_ACCESS_TTL_SECONDS = '900';
+process.env.JWT_REFRESH_TTL_SECONDS = '2592000';
+process.env.OTP_TTL_SECONDS = '600';
+process.env.AUTH_DEV_DEFAULT_EMAIL = 'a@a.de';
+process.env.OPENAPI_ENABLED = 'false';

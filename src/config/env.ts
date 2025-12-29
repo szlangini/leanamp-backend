@@ -5,36 +5,39 @@ if (process.env.NODE_ENV !== 'production') {
   dotenv.config();
 }
 
-const envSchema = z.object({
-  PORT: z.preprocess(
+const numberSchema = (defaultValue: number) =>
+  z.preprocess(
     (value) => (value === undefined ? undefined : Number(value)),
-    z.number().int().positive().default(3001)
-  ),
+    z.number().int().positive().default(defaultValue)
+  );
+
+const booleanSchema = (defaultValue: boolean) =>
+  z.preprocess(
+    (value) => {
+      if (value === undefined) return undefined;
+      if (typeof value === 'string') {
+        const normalized = value.toLowerCase();
+        if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+        if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+      }
+      return value;
+    },
+    z.boolean().default(defaultValue)
+  );
+
+const envSchema = z.object({
+  PORT: numberSchema(3001),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-  DEV_LOG: z.preprocess(
-    (value) => {
-      if (value === undefined) return undefined;
-      if (typeof value === 'string') {
-        const normalized = value.toLowerCase();
-        if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
-        if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
-      }
-      return value;
-    },
-    z.boolean().default(true)
-  ),
-  OPENAPI_ENABLED: z.preprocess(
-    (value) => {
-      if (value === undefined) return undefined;
-      if (typeof value === 'string') {
-        const normalized = value.toLowerCase();
-        if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
-        if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
-      }
-      return value;
-    },
-    z.boolean().default(process.env.NODE_ENV === 'production' ? false : true)
-  )
+  DEV_LOG: booleanSchema(true),
+  OPENAPI_ENABLED: booleanSchema(process.env.NODE_ENV === 'production' ? false : true),
+  AUTH_MODE: z.enum(['dev', 'jwt']).default('dev'),
+  JWT_ACCESS_SECRET: z.string().min(1).default('change_me'),
+  JWT_REFRESH_SECRET: z.string().min(1).default('change_me'),
+  JWT_ACCESS_TTL_SECONDS: numberSchema(900),
+  JWT_REFRESH_TTL_SECONDS: numberSchema(2592000),
+  OTP_TTL_SECONDS: numberSchema(600),
+  DEV_OTP_ECHO: booleanSchema(true),
+  AUTH_DEV_DEFAULT_EMAIL: z.string().min(1).default('a@a.de')
 });
 
 const parsed = envSchema.safeParse(process.env);

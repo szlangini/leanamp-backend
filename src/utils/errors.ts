@@ -33,3 +33,11 @@ export function badRequest(reply: FastifyReply, message: string, details?: unkno
 export function notFound(reply: FastifyReply, message: string) {
   return sendError(reply, 404, 'not_found', message);
 }
+
+export function unauthorized(reply: FastifyReply, message: string) {
+  return sendError(reply, 401, 'unauthorized', message);
+}
+
+export function tooManyRequests(reply: FastifyReply, message: string) {
+  return sendError(reply, 429, 'too_many_requests', message);
+}

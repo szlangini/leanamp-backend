@@ -6,6 +6,7 @@ import { registerFoodPaths } from './paths/food';
 import { registerWaterPaths } from './paths/water';
 import { registerTrainingPaths } from './paths/training';
 import { registerAnalyticsPaths } from './paths/analytics';
+import { registerAuthPaths } from './paths/auth';
 
 function getPackageVersion() {
   try {
@@ -22,6 +23,7 @@ export function buildOpenApi() {
   const paths: Record<string, Record<string, unknown>> = {};
 
   registerProfilePaths(registry, paths);
+  registerAuthPaths(registry, paths);
   registerFoodPaths(registry, paths);
   registerWaterPaths(registry, paths);
   registerTrainingPaths(registry, paths);
