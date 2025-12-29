@@ -22,6 +22,18 @@ const envSchema = z.object({
       return value;
     },
     z.boolean().default(true)
+  ),
+  OPENAPI_ENABLED: z.preprocess(
+    (value) => {
+      if (value === undefined) return undefined;
+      if (typeof value === 'string') {
+        const normalized = value.toLowerCase();
+        if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+        if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+      }
+      return value;
+    },
+    z.boolean().default(process.env.NODE_ENV === 'production' ? false : true)
   )
 });
 

@@ -7,6 +7,7 @@ import foodRoutes from './modules/food/routes';
 import waterRoutes from './modules/water/routes';
 import trainingRoutes from './modules/training/routes';
 import analyticsRoutes from './modules/analytics/routes';
+import openapiPlugin from './plugins/openapi';
 
 export function buildApp(): FastifyInstance {
   const logger = env.DEV_LOG
@@ -28,6 +29,7 @@ export function buildApp(): FastifyInstance {
   app.register(waterRoutes, { prefix: '/water' });
   app.register(trainingRoutes, { prefix: '/training' });
   app.register(analyticsRoutes, { prefix: '/analytics' });
+  app.register(openapiPlugin);
 
   return app;
 }

@@ -96,3 +96,12 @@ curl "localhost:3001/analytics/summary?range=7" \
 curl "localhost:3001/analytics/strength-trends?range=30" \
   -H "x-dev-user: 11111111-1111-1111-1111-111111111111"
 ```
+
+## OpenAPI
+
+```bash
+pnpm openapi:generate
+```
+
+OpenAPI JSON: `openapi/openapi.json`  
+Swagger UI: http://localhost:3001/docs

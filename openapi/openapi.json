@@ -1,0 +1,3271 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "leanamp-backend",
+    "version": "0.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3001"
+    }
+  ],
+  "paths": {
+    "/profile": {
+      "get": {
+        "tags": [
+          "profile"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "profile"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "units": {
+                    "type": "string",
+                    "enum": [
+                      "metric",
+                      "imperial"
+                    ]
+                  },
+                  "weightKg": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "heightCm": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "age": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "sex": {
+                    "type": "string",
+                    "enum": [
+                      "male",
+                      "female",
+                      "other",
+                      "unknown"
+                    ]
+                  },
+                  "bodyFatPct": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "activityLevel": {
+                    "type": "string",
+                    "enum": [
+                      "sedentary",
+                      "light",
+                      "moderate",
+                      "high"
+                    ]
+                  },
+                  "baselineTDEE": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "baselineTDEEAuto": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "targetWeightKg": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "weeklyTrainingGoal": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "proteinGoalG": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "fatGoalG": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "fiberGoalG": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "waterGoalLiters": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "waterGoalAuto": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "kcalTargetAuto": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "kcalTargetOverride": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "dietPreference": {
+                    "type": "string",
+                    "enum": [
+                      "balanced",
+                      "lowCarb",
+                      "keto"
+                    ]
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "hasOnboarded": {
+                    "type": "boolean"
+                  },
+                  "goalMode": {
+                    "type": "string",
+                    "enum": [
+                      "cut",
+                      "maintain",
+                      "bulk"
+                    ]
+                  },
+                  "targetRateKgPerWeek": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "autoAdjustKcal": {
+                    "type": "integer"
+                  },
+                  "weeklyAdjustLog": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "weekKey": {
+                          "type": "string"
+                        },
+                        "deltaKcal": {
+                          "type": "integer"
+                        },
+                        "reason": {
+                          "type": "string"
+                        },
+                        "createdAtISO": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "weekKey",
+                        "deltaKcal",
+                        "reason",
+                        "createdAtISO"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "lastAdjustedWeekKey": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "neatFactor": {
+                    "type": "number"
+                  },
+                  "baselineSteps": {
+                    "type": "integer"
+                  },
+                  "manualCalorieTargetEnabled": {
+                    "type": "boolean"
+                  },
+                  "manualCalorieTargetKcal": {
+                    "type": "integer",
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/templates": {
+      "get": {
+        "tags": [
+          "food"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "kcal": {
+                        "type": "integer"
+                      },
+                      "protein": {
+                        "type": "number"
+                      },
+                      "fat": {
+                        "type": "number"
+                      },
+                      "carbs": {
+                        "type": "number"
+                      },
+                      "fiber": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "createdAt",
+                      "updatedAt",
+                      "name",
+                      "kcal",
+                      "protein",
+                      "fat",
+                      "carbs",
+                      "fiber"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "food"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kcal": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "protein": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fat": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "carbs": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fiber": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "kcal",
+                  "protein",
+                  "fat",
+                  "carbs",
+                  "fiber"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodTemplate"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/templates/{id}": {
+      "delete": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/meal-groups": {
+      "post": {
+        "tags": [
+          "food"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "isExpanded": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "title"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/meal-groups/{id}": {
+      "patch": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "isExpanded": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MealGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/entries": {
+      "get": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "dateISO": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "kcal": {
+                        "type": "integer"
+                      },
+                      "protein": {
+                        "type": "number"
+                      },
+                      "fat": {
+                        "type": "number"
+                      },
+                      "carbs": {
+                        "type": "number"
+                      },
+                      "fiber": {
+                        "type": "number"
+                      },
+                      "multiplier": {
+                        "type": "number"
+                      },
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "quick_add",
+                          "manual",
+                          "photo",
+                          "ai_text"
+                        ]
+                      },
+                      "groupId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "nullable": true
+                      },
+                      "note": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "createdAt",
+                      "updatedAt",
+                      "dateISO",
+                      "name",
+                      "kcal",
+                      "protein",
+                      "fat",
+                      "carbs",
+                      "fiber",
+                      "multiplier",
+                      "type",
+                      "groupId",
+                      "note"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "food"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kcal": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "protein": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fat": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "carbs": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fiber": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "multiplier": {
+                    "type": "number",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "quick_add",
+                      "manual",
+                      "photo",
+                      "ai_text"
+                    ]
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "name",
+                  "kcal",
+                  "protein",
+                  "fat",
+                  "carbs",
+                  "fiber",
+                  "type"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/entries/{id}": {
+      "patch": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "kcal": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "protein": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fat": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "carbs": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "fiber": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "multiplier": {
+                    "type": "number",
+                    "exclusiveMinimum": true,
+                    "minimum": 0
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "quick_add",
+                      "manual",
+                      "photo",
+                      "ai_text"
+                    ]
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "nullable": true
+                  },
+                  "note": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FoodEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/water": {
+      "get": {
+        "tags": [
+          "water"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaterLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "water"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "amountMl": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "amountMl"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaterLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/plan": {
+      "get": {
+        "tags": [
+          "training"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "emoji": {
+                        "type": "string"
+                      },
+                      "exercises": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "userId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "dayId": {
+                              "type": "string",
+                              "format": "uuid"
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "updatedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "workingWeight": {
+                              "type": "number"
+                            },
+                            "targetRepsMin": {
+                              "type": "integer"
+                            },
+                            "targetRepsMax": {
+                              "type": "integer"
+                            },
+                            "notes": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "pinned": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "userId",
+                            "dayId",
+                            "createdAt",
+                            "updatedAt",
+                            "name",
+                            "workingWeight",
+                            "targetRepsMin",
+                            "targetRepsMax",
+                            "notes",
+                            "pinned"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "createdAt",
+                      "updatedAt",
+                      "title",
+                      "emoji",
+                      "exercises"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/plan/day": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "emoji": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "title",
+                  "emoji"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/plan/day/{id}": {
+      "patch": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "emoji": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DayPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/plan/exercise": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dayId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "workingWeight": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "targetRepsMin": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "targetRepsMax": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "dayId",
+                  "name",
+                  "workingWeight",
+                  "targetRepsMin",
+                  "targetRepsMax"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlannedExercise"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/plan/exercise/{id}": {
+      "patch": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "workingWeight": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "targetRepsMin": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "targetRepsMax": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlannedExercise"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/topsets": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "dayId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "exerciseId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "weight": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "reps": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "sets": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "workSets": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "weight": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "reps": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "weight",
+                        "reps"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "dayId",
+                  "exerciseId",
+                  "weight",
+                  "reps",
+                  "sets",
+                  "workSets"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopSetEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "7",
+                    "30",
+                    "90"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              ]
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "dateISO": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "dayId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "exerciseId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "weight": {
+                        "type": "number"
+                      },
+                      "reps": {
+                        "type": "integer"
+                      },
+                      "sets": {
+                        "type": "integer"
+                      },
+                      "workSets": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "weight": {
+                              "type": "number"
+                            },
+                            "reps": {
+                              "type": "integer"
+                            },
+                            "id": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "weight",
+                            "reps"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "createdAt",
+                      "updatedAt",
+                      "dateISO",
+                      "dayId",
+                      "exerciseId",
+                      "weight",
+                      "reps",
+                      "sets",
+                      "workSets"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/completions": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "dayId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "dayId"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompletionLog"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/completions/{dateISO}": {
+      "delete": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "dateISO",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "dayId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/extra-activity": {
+      "post": {
+        "tags": [
+          "training"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "type": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "intensity": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "moderate",
+                      "high"
+                    ]
+                  },
+                  "kcalEst": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "notes": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "type",
+                  "minutes",
+                  "intensity",
+                  "kcalEst"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtraActivity"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updatedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "dateISO": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "minutes": {
+                        "type": "integer"
+                      },
+                      "intensity": {
+                        "type": "string",
+                        "enum": [
+                          "low",
+                          "moderate",
+                          "high"
+                        ]
+                      },
+                      "kcalEst": {
+                        "type": "number"
+                      },
+                      "notes": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "userId",
+                      "createdAt",
+                      "updatedAt",
+                      "dateISO",
+                      "type",
+                      "minutes",
+                      "intensity",
+                      "kcalEst",
+                      "notes"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/training/extra-activity/{id}": {
+      "delete": {
+        "tags": [
+          "training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/summary": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7",
+                "30",
+                "90"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyticsSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/strength-trends": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "30",
+                    "90"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StrengthTrends"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "units": {
+            "type": "string",
+            "enum": [
+              "metric",
+              "imperial"
+            ]
+          },
+          "weightKg": {
+            "type": "number",
+            "nullable": true
+          },
+          "heightCm": {
+            "type": "number",
+            "nullable": true
+          },
+          "age": {
+            "type": "integer",
+            "nullable": true
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "other",
+              "unknown"
+            ]
+          },
+          "bodyFatPct": {
+            "type": "number",
+            "nullable": true
+          },
+          "activityLevel": {
+            "type": "string",
+            "enum": [
+              "sedentary",
+              "light",
+              "moderate",
+              "high"
+            ]
+          },
+          "baselineTDEE": {
+            "type": "integer",
+            "nullable": true
+          },
+          "baselineTDEEAuto": {
+            "type": "integer",
+            "nullable": true
+          },
+          "targetWeightKg": {
+            "type": "number",
+            "nullable": true
+          },
+          "goalMode": {
+            "type": "string",
+            "enum": [
+              "cut",
+              "maintain",
+              "bulk"
+            ]
+          },
+          "targetRateKgPerWeek": {
+            "type": "number"
+          },
+          "autoAdjustKcal": {
+            "type": "integer"
+          },
+          "weeklyAdjustLog": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weekKey": {
+                  "type": "string"
+                },
+                "deltaKcal": {
+                  "type": "integer"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "createdAtISO": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "weekKey",
+                "deltaKcal",
+                "reason",
+                "createdAtISO"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "lastAdjustedWeekKey": {
+            "type": "string",
+            "nullable": true
+          },
+          "neatFactor": {
+            "type": "number"
+          },
+          "baselineSteps": {
+            "type": "integer"
+          },
+          "manualCalorieTargetEnabled": {
+            "type": "boolean"
+          },
+          "manualCalorieTargetKcal": {
+            "type": "integer",
+            "nullable": true
+          },
+          "weeklyTrainingGoal": {
+            "type": "integer",
+            "nullable": true
+          },
+          "proteinGoalG": {
+            "type": "integer",
+            "nullable": true
+          },
+          "fatGoalG": {
+            "type": "integer",
+            "nullable": true
+          },
+          "fiberGoalG": {
+            "type": "integer",
+            "nullable": true
+          },
+          "waterGoalLiters": {
+            "type": "number",
+            "nullable": true
+          },
+          "waterGoalAuto": {
+            "type": "number",
+            "nullable": true
+          },
+          "kcalTargetAuto": {
+            "type": "integer",
+            "nullable": true
+          },
+          "kcalTargetOverride": {
+            "type": "integer",
+            "nullable": true
+          },
+          "dietPreference": {
+            "type": "string",
+            "enum": [
+              "balanced",
+              "lowCarb",
+              "keto"
+            ]
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "hasOnboarded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "units",
+          "weightKg",
+          "heightCm",
+          "age",
+          "sex",
+          "bodyFatPct",
+          "activityLevel",
+          "baselineTDEE",
+          "baselineTDEEAuto",
+          "targetWeightKg",
+          "goalMode",
+          "targetRateKgPerWeek",
+          "autoAdjustKcal",
+          "weeklyAdjustLog",
+          "lastAdjustedWeekKey",
+          "neatFactor",
+          "baselineSteps",
+          "manualCalorieTargetEnabled",
+          "manualCalorieTargetKcal",
+          "weeklyTrainingGoal",
+          "proteinGoalG",
+          "fatGoalG",
+          "fiberGoalG",
+          "waterGoalLiters",
+          "waterGoalAuto",
+          "kcalTargetAuto",
+          "kcalTargetOverride",
+          "dietPreference",
+          "timezone",
+          "hasOnboarded"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "FoodTemplate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kcal": {
+            "type": "integer"
+          },
+          "protein": {
+            "type": "number"
+          },
+          "fat": {
+            "type": "number"
+          },
+          "carbs": {
+            "type": "number"
+          },
+          "fiber": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "kcal",
+          "protein",
+          "fat",
+          "carbs",
+          "fiber"
+        ],
+        "additionalProperties": false
+      },
+      "MealGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateISO": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string"
+          },
+          "isExpanded": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "dateISO",
+          "title",
+          "isExpanded"
+        ],
+        "additionalProperties": false
+      },
+      "FoodEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateISO": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kcal": {
+            "type": "integer"
+          },
+          "protein": {
+            "type": "number"
+          },
+          "fat": {
+            "type": "number"
+          },
+          "carbs": {
+            "type": "number"
+          },
+          "fiber": {
+            "type": "number"
+          },
+          "multiplier": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "quick_add",
+              "manual",
+              "photo",
+              "ai_text"
+            ]
+          },
+          "groupId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "dateISO",
+          "name",
+          "kcal",
+          "protein",
+          "fat",
+          "carbs",
+          "fiber",
+          "multiplier",
+          "type",
+          "groupId",
+          "note"
+        ],
+        "additionalProperties": false
+      },
+      "WaterLog": {
+        "type": "object",
+        "properties": {
+          "dateISO": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "amountMl": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dateISO",
+          "amountMl"
+        ],
+        "additionalProperties": false
+      },
+      "DayPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "title": {
+            "type": "string"
+          },
+          "emoji": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "title",
+          "emoji"
+        ],
+        "additionalProperties": false
+      },
+      "PlannedExercise": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "dayId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "name": {
+            "type": "string"
+          },
+          "workingWeight": {
+            "type": "number"
+          },
+          "targetRepsMin": {
+            "type": "integer"
+          },
+          "targetRepsMax": {
+            "type": "integer"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          },
+          "pinned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "dayId",
+          "createdAt",
+          "updatedAt",
+          "name",
+          "workingWeight",
+          "targetRepsMin",
+          "targetRepsMax",
+          "notes",
+          "pinned"
+        ],
+        "additionalProperties": false
+      },
+      "TopSetEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateISO": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dayId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exerciseId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "reps": {
+            "type": "integer"
+          },
+          "sets": {
+            "type": "integer"
+          },
+          "workSets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "weight": {
+                  "type": "number"
+                },
+                "reps": {
+                  "type": "integer"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "weight",
+                "reps"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "dateISO",
+          "dayId",
+          "exerciseId",
+          "weight",
+          "reps",
+          "sets",
+          "workSets"
+        ],
+        "additionalProperties": false
+      },
+      "CompletionLog": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateISO": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dayId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "dateISO",
+          "dayId"
+        ],
+        "additionalProperties": false
+      },
+      "ExtraActivity": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dateISO": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string"
+          },
+          "minutes": {
+            "type": "integer"
+          },
+          "intensity": {
+            "type": "string",
+            "enum": [
+              "low",
+              "moderate",
+              "high"
+            ]
+          },
+          "kcalEst": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "createdAt",
+          "updatedAt",
+          "dateISO",
+          "type",
+          "minutes",
+          "intensity",
+          "kcalEst",
+          "notes"
+        ],
+        "additionalProperties": false
+      },
+      "AnalyticsSummary": {
+        "type": "object",
+        "properties": {
+          "rangeDays": {
+            "type": "integer"
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          "daily": {
+            "type": "object",
+            "properties": {
+              "intakeKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "outtakeEstKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "targetKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "balanceKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "modeOffsetKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "autoAdjustKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "extraActivityKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "stepsDeltaKcal": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "waterMl": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "macros": {
+                "type": "object",
+                "properties": {
+                  "proteinG": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "fatG": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "carbsG": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "fiberG": {
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "required": [
+                  "proteinG",
+                  "fatG",
+                  "carbsG",
+                  "fiberG"
+                ],
+                "additionalProperties": false
+              },
+              "completions": {
+                "type": "object",
+                "properties": {
+                  "any": {
+                    "type": "array",
+                    "items": {
+                      "type": "boolean"
+                    }
+                  },
+                  "count": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                },
+                "required": [
+                  "any",
+                  "count"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "intakeKcal",
+              "outtakeEstKcal",
+              "targetKcal",
+              "balanceKcal",
+              "modeOffsetKcal",
+              "autoAdjustKcal",
+              "extraActivityKcal",
+              "stepsDeltaKcal",
+              "waterMl",
+              "macros",
+              "completions"
+            ],
+            "additionalProperties": false
+          },
+          "weight": {
+            "type": "object",
+            "properties": {
+              "weighIns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "dateISO": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "weightKg": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "dateISO",
+                    "weightKg"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "avg7d": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "dateISO": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "weightKg": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "dateISO",
+                    "weightKg"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "weighIns",
+              "avg7d"
+            ],
+            "additionalProperties": false
+          },
+          "aggregates": {
+            "type": "object",
+            "properties": {
+              "avgIntakeKcal": {
+                "type": "number"
+              },
+              "avgOuttakeEstKcal": {
+                "type": "number"
+              },
+              "avgTargetKcal": {
+                "type": "number"
+              },
+              "avgBalanceKcal": {
+                "type": "number"
+              },
+              "actualRateKgPerWeek": {
+                "type": "number",
+                "nullable": true
+              }
+            },
+            "required": [
+              "avgIntakeKcal",
+              "avgOuttakeEstKcal",
+              "avgTargetKcal",
+              "avgBalanceKcal",
+              "actualRateKgPerWeek"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "neatFactor": {
+                "type": "number"
+              },
+              "baselineTDEE": {
+                "type": "number",
+                "nullable": true
+              },
+              "goalMode": {
+                "type": "string",
+                "enum": [
+                  "cut",
+                  "maintain",
+                  "bulk"
+                ]
+              },
+              "targetRateKgPerWeek": {
+                "type": "number",
+                "nullable": true
+              },
+              "autoAdjustKcalCurrent": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "neatFactor",
+              "baselineTDEE",
+              "goalMode",
+              "targetRateKgPerWeek",
+              "autoAdjustKcalCurrent"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "rangeDays",
+          "dates",
+          "daily",
+          "weight",
+          "aggregates",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "StrengthTrends": {
+        "type": "object",
+        "properties": {
+          "rangeDays": {
+            "type": "integer"
+          },
+          "topDeltas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "exerciseId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "exerciseName": {
+                  "type": "string"
+                },
+                "first": {
+                  "type": "object",
+                  "properties": {
+                    "dateISO": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "weight": {
+                      "type": "number"
+                    },
+                    "reps": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "dateISO",
+                    "weight",
+                    "reps"
+                  ],
+                  "additionalProperties": false
+                },
+                "last": {
+                  "type": "object",
+                  "properties": {
+                    "dateISO": {
+                      "type": "string",
+                      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                    },
+                    "weight": {
+                      "type": "number"
+                    },
+                    "reps": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "dateISO",
+                    "weight",
+                    "reps"
+                  ],
+                  "additionalProperties": false
+                },
+                "deltaWeight": {
+                  "type": "number"
+                },
+                "deltaReps": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "exerciseId",
+                "exerciseName",
+                "first",
+                "last",
+                "deltaWeight",
+                "deltaReps"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "rangeDays",
+          "topDeltas"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
