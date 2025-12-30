@@ -7,6 +7,7 @@ import { registerWaterPaths } from './paths/water';
 import { registerTrainingPaths } from './paths/training';
 import { registerAnalyticsPaths } from './paths/analytics';
 import { registerAuthPaths } from './paths/auth';
+import { registerAiPaths } from './paths/ai';
 
 function getPackageVersion() {
   try {
@@ -28,6 +29,7 @@ export function buildOpenApi() {
   registerWaterPaths(registry, paths);
   registerTrainingPaths(registry, paths);
   registerAnalyticsPaths(registry, paths);
+  registerAiPaths(registry, paths);
 
   return {
     openapi: '3.1.0',

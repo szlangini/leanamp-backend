@@ -75,6 +75,15 @@ enum MediaType {
   other
 }
 
+enum AiKind {
+  INSIGHTS
+  ACTIVITY
+  FOOD_TEXT
+  VOICE_TO_MEAL
+  FOOD_PHOTO
+  BODYFAT
+}
+
 model User {
   id             String   @id @default(uuid())
   createdAt      DateTime @default(now())
@@ -372,4 +381,19 @@ model EmailOtp {
   consumedAt DateTime?
 
   @@index([email, expiresAt])
+}
+
+model AiCallLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  kind          AiKind
+  provider      String
+  model         String
+  createdAt     DateTime @default(now())
+  latencyMs     Int
+  success       Boolean
+  inputBytes    Int
+  outputBytes   Int
+  promptVersion String
+  isEstimate    Boolean
 }

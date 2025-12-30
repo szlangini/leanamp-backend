@@ -81,6 +81,32 @@ curl "localhost:3001/food/catalog/search?q=chicken&limit=5" \
 pnpm smoke
 ```
 
+## AI (Gemini) 🤖
+
+- Enable: set `AI_ENABLED=true` and `GEMINI_API_KEY` in `.env` (never commit secrets).
+- Endpoints: `/ai/insights`, `/ai/activity/estimate`, `/ai/food/describe`, `/ai/voice-to-meal`.
+- No raw prompts/outputs stored; only minimal call logs.
+
+```bash
+# insights (dev auth)
+curl -X POST localhost:3001/ai/insights \\
+  -H "content-type: application/json" \\
+  -H "x-dev-user: dev@local" \\
+  -d '{"calories":{"intakeAvg":2100,"targetKcal":2200,"balanceAvg":-100},"macros":{"proteinG":140,"fatG":70,"carbsG":220,"fiberG":25},"water":{"litersAvg":2.3,"adherence":0.8},"movement":{"stepsAvg":8000,"exerciseCount":3,"strengthTrend":"up"},"weight":{"rateKgPerWeek":0.2,"volatility":0.3}}'
+
+# activity estimate
+curl -X POST localhost:3001/ai/activity/estimate \\
+  -H "content-type: application/json" \\
+  -H "x-dev-user: dev@local" \\
+  -d '{"type":"cycling","minutes":45,"intensity":"moderate","weightKg":80}'
+
+# voice-to-meal (text transcript)
+curl -X POST localhost:3001/ai/voice-to-meal \\
+  -H "content-type: application/json" \\
+  -H "x-dev-user: dev@local" \\
+  -d '{"text":"ate a bowl of oatmeal with banana and peanut butter","locale":"en"}'
+```
+
 ## Deployment 🌍
 
 - Render steps: `docs/deploy/render.md`

@@ -9,10 +9,12 @@ import foodCatalogRoutes from './modules/foodCatalog/routes';
 import waterRoutes from './modules/water/routes';
 import trainingRoutes from './modules/training/routes';
 import analyticsRoutes from './modules/analytics/routes';
+import aiRoutes from './modules/ai/routes';
 import openapiPlugin from './plugins/openapi';
 import rateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
 import type { FoodCatalogProvider } from './modules/foodCatalog/providers/types';
+import type { AiProvider } from './modules/ai/service';
 
 type BuildAppOptions = {
   foodCatalog?: {
@@ -24,6 +26,18 @@ type BuildAppOptions = {
     enableUsda?: boolean;
     internalOnly?: boolean;
     cacheOnlyOnProviderDown?: boolean;
+  };
+  ai?: {
+    provider?: AiProvider;
+    cache?: Map<string, { expiresAt: number; payload: unknown }>;
+    counters?: Map<string, number>;
+    limits?: {
+      dailyTotal?: number;
+      dailyText?: number;
+      dailyImage?: number;
+      dailyHeavy?: number;
+    };
+    now?: () => Date;
   };
 };
 
@@ -91,6 +105,14 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   app.register(waterRoutes, { prefix: '/water' });
   app.register(trainingRoutes, { prefix: '/training' });
   app.register(analyticsRoutes, { prefix: '/analytics' });
+  app.register(aiRoutes, {
+    prefix: '/ai',
+    provider: options.ai?.provider,
+    cache: options.ai?.cache,
+    counters: options.ai?.counters,
+    limits: options.ai?.limits,
+    now: options.ai?.now
+  });
   app.register(openapiPlugin);
 
   return app;

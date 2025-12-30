@@ -1312,6 +1312,22 @@
               "type": "string",
               "pattern": "^\\d{8,14}$"
             }
+          },
+          {
+            "name": "fallbackName",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "string",
+                  "minLength": 2
+                }
+              ]
+            }
           }
         ],
         "responses": {
@@ -2707,6 +2723,736 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/insights": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "calories": {
+                    "type": "object",
+                    "properties": {
+                      "intakeAvg": {
+                        "type": "number"
+                      },
+                      "targetKcal": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "balanceAvg": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "intakeAvg",
+                      "balanceAvg"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "macros": {
+                    "type": "object",
+                    "properties": {
+                      "proteinG": {
+                        "type": "number"
+                      },
+                      "fatG": {
+                        "type": "number"
+                      },
+                      "carbsG": {
+                        "type": "number"
+                      },
+                      "fiberG": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "proteinG",
+                      "fatG",
+                      "carbsG"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "water": {
+                    "type": "object",
+                    "properties": {
+                      "litersAvg": {
+                        "type": "number"
+                      },
+                      "adherence": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1,
+                        "nullable": true
+                      }
+                    },
+                    "required": [
+                      "litersAvg"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "movement": {
+                    "type": "object",
+                    "properties": {
+                      "stepsAvg": {
+                        "type": "number"
+                      },
+                      "exerciseCount": {
+                        "type": "integer"
+                      },
+                      "strengthTrend": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "stepsAvg",
+                      "exerciseCount"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "weight": {
+                    "type": "object",
+                    "properties": {
+                      "rateKgPerWeek": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "volatility": {
+                        "type": "number",
+                        "nullable": true
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "calories",
+                  "macros",
+                  "water",
+                  "movement",
+                  "weight"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "overall": {
+                      "type": "string",
+                      "enum": [
+                        "POS",
+                        "NEU",
+                        "NEG"
+                      ]
+                    },
+                    "bullets": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "k": {
+                            "type": "string",
+                            "enum": [
+                              "CAL",
+                              "PROTEIN",
+                              "WATER",
+                              "MOVE",
+                              "STRENGTH",
+                              "RECOVERY"
+                            ]
+                          },
+                          "s": {
+                            "type": "string",
+                            "enum": [
+                              "P1",
+                              "P2",
+                              "P3"
+                            ]
+                          },
+                          "t": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "k",
+                          "s",
+                          "t"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 5
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "t": {
+                            "type": "string"
+                          },
+                          "p": {
+                            "type": "string",
+                            "enum": [
+                              "HIGH",
+                              "MED",
+                              "LOW"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "t",
+                          "p"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "maxItems": 3
+                    },
+                    "warnings": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "disclaimer": {
+                      "type": "string",
+                      "enum": [
+                        "ESTIMATE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "overall",
+                    "bullets",
+                    "actions",
+                    "warnings",
+                    "disclaimer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/activity/estimate": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "minLength": 2
+                  },
+                  "minutes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "intensity": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "moderate",
+                      "high"
+                    ]
+                  },
+                  "weightKg": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "type",
+                  "minutes",
+                  "intensity"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "kcal": {
+                      "type": "integer"
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "notes": {
+                      "type": "string"
+                    },
+                    "disclaimer": {
+                      "type": "string",
+                      "enum": [
+                        "ESTIMATE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "kcal",
+                    "confidence",
+                    "notes",
+                    "disclaimer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/food/describe": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 500
+                  },
+                  "locale": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "mealName": {
+                      "type": "string"
+                    },
+                    "parsed": {
+                      "type": "string"
+                    },
+                    "kcal": {
+                      "type": "integer"
+                    },
+                    "protein": {
+                      "type": "number"
+                    },
+                    "fat": {
+                      "type": "number"
+                    },
+                    "carbs": {
+                      "type": "number"
+                    },
+                    "fiber": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 2
+                    },
+                    "disclaimer": {
+                      "type": "string",
+                      "enum": [
+                        "ESTIMATE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "mealName",
+                    "parsed",
+                    "kcal",
+                    "protein",
+                    "fat",
+                    "carbs",
+                    "fiber",
+                    "confidence",
+                    "questions",
+                    "disclaimer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/voice-to-meal": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 500
+                  },
+                  "locale": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "text"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "OK"
+                      ]
+                    },
+                    "mealName": {
+                      "type": "string"
+                    },
+                    "parsed": {
+                      "type": "string"
+                    },
+                    "kcal": {
+                      "type": "integer"
+                    },
+                    "protein": {
+                      "type": "number"
+                    },
+                    "fat": {
+                      "type": "number"
+                    },
+                    "carbs": {
+                      "type": "number"
+                    },
+                    "fiber": {
+                      "type": "number",
+                      "nullable": true
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "questions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "maxItems": 2
+                    },
+                    "disclaimer": {
+                      "type": "string",
+                      "enum": [
+                        "ESTIMATE"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "mealName",
+                    "parsed",
+                    "kcal",
+                    "protein",
+                    "fat",
+                    "carbs",
+                    "fiber",
+                    "confidence",
+                    "questions",
+                    "disclaimer"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Bad Gateway",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/food/photo": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "responses": {
+          "501": {
+            "description": "Not Implemented",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/bodyfat/photos": {
+      "post": {
+        "tags": [
+          "ai"
+        ],
+        "responses": {
+          "501": {
+            "description": "Not Implemented",
             "content": {
               "application/json": {
                 "schema": {
