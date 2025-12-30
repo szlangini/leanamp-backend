@@ -76,6 +76,9 @@ curl "localhost:3001/food/catalog/search?q=chicken&limit=5" \
 
 # USDA (optional, requires API key)
 # set FOOD_CATALOG_ENABLE_USDA=true and USDA_API_KEY in .env (never commit secrets)
+
+# scripted smoke (uses AUTH_MODE + DEV_OTP_ECHO settings)
+pnpm smoke
 ```
 
 ## Deployment 🌍

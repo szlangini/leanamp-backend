@@ -2,8 +2,6 @@ import { env } from '../../../config/env';
 import type { FoodCatalogCandidate, FoodQuality } from '../types';
 import type { FoodCatalogProvider } from './types';
 
-const TIMEOUT_MS = 6000;
-
 type UsdaFood = {
   fdcId?: number;
   description?: string;
@@ -95,13 +93,19 @@ function normalizeFood(food: UsdaFood): FoodCatalogCandidate | null {
   };
 }
 
-async function fetchJson(url: string): Promise<UsdaSearchResponse | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+async function fetchJson(
+  url: string,
+  signal?: AbortSignal
+): Promise<UsdaSearchResponse | null> {
+  const controller = signal ? null : new AbortController();
+  const timeout = controller
+    ? setTimeout(() => controller.abort(), env.PROVIDER_TIMEOUT_MS)
+    : null;
+  const requestSignal = signal ?? controller?.signal;
 
   try {
     const response = await fetch(url, {
-      signal: controller.signal
+      signal: requestSignal
     });
 
     if (!response.ok) {
@@ -112,13 +116,15 @@ async function fetchJson(url: string): Promise<UsdaSearchResponse | null> {
   } catch {
     return null;
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 }
 
 export function createUsdaFdcProvider(): FoodCatalogProvider {
   return {
-    async search(query: string, limit: number) {
+    async search(query: string, limit: number, signal?: AbortSignal) {
       if (!env.USDA_API_KEY) {
         return [];
       }
@@ -130,7 +136,7 @@ export function createUsdaFdcProvider(): FoodCatalogProvider {
       });
 
       const url = `${env.USDA_BASE_URL}/foods/search?${params.toString()}`;
-      const payload = await fetchJson(url);
+      const payload = await fetchJson(url, signal);
       const foods = Array.isArray(payload?.foods) ? payload?.foods : [];
 
       const items = foods
@@ -140,7 +146,7 @@ export function createUsdaFdcProvider(): FoodCatalogProvider {
       return items.slice(0, limit);
     },
 
-    async barcode(ean: string) {
+    async barcode(ean: string, signal?: AbortSignal) {
       if (!env.USDA_API_KEY) {
         return null;
       }
@@ -152,7 +158,7 @@ export function createUsdaFdcProvider(): FoodCatalogProvider {
       });
 
       const url = `${env.USDA_BASE_URL}/foods/search?${params.toString()}`;
-      const payload = await fetchJson(url);
+      const payload = await fetchJson(url, signal);
       const foods = Array.isArray(payload?.foods) ? payload?.foods : [];
       const match = foods.find((food) => food.gtinUpc === ean);
       if (!match) return null;

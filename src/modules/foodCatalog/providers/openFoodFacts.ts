@@ -2,8 +2,6 @@ import { env } from '../../../config/env';
 import type { FoodCatalogCandidate, FoodQuality } from '../types';
 import type { FoodCatalogProvider } from './types';
 
-const TIMEOUT_MS = 6000;
-
 function toNumber(value: unknown): number | null {
   if (value === undefined || value === null || value === '') return null;
   const num = typeof value === 'number' ? value : Number(value);
@@ -68,16 +66,22 @@ function normalizeProduct(product: Record<string, unknown>): FoodCatalogCandidat
   };
 }
 
-async function fetchJson(url: string): Promise<Record<string, unknown> | null> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+async function fetchJson(
+  url: string,
+  signal?: AbortSignal
+): Promise<Record<string, unknown> | null> {
+  const controller = signal ? null : new AbortController();
+  const timeout = controller
+    ? setTimeout(() => controller.abort(), env.PROVIDER_TIMEOUT_MS)
+    : null;
+  const requestSignal = signal ?? controller?.signal;
 
   try {
     const response = await fetch(url, {
       headers: {
         'User-Agent': env.OFF_USER_AGENT
       },
-      signal: controller.signal
+      signal: requestSignal
     });
 
     if (!response.ok) {
@@ -88,13 +92,15 @@ async function fetchJson(url: string): Promise<Record<string, unknown> | null> {
   } catch {
     return null;
   } finally {
-    clearTimeout(timeout);
+    if (timeout) {
+      clearTimeout(timeout);
+    }
   }
 }
 
 export function createOpenFoodFactsProvider(): FoodCatalogProvider {
   return {
-    async search(query: string, limit: number) {
+    async search(query: string, limit: number, signal?: AbortSignal) {
       const params = new URLSearchParams({
         search_terms: query,
         search_simple: '1',
@@ -114,7 +120,7 @@ export function createOpenFoodFactsProvider(): FoodCatalogProvider {
       });
 
       const url = `${env.OFF_BASE_URL}/cgi/search.pl?${params.toString()}`;
-      const payload = await fetchJson(url);
+      const payload = await fetchJson(url, signal);
       const products = Array.isArray(payload?.products) ? payload?.products : [];
 
       const items = products
@@ -124,9 +130,9 @@ export function createOpenFoodFactsProvider(): FoodCatalogProvider {
       return items.slice(0, limit);
     },
 
-    async barcode(ean: string) {
+    async barcode(ean: string, signal?: AbortSignal) {
       const url = `${env.OFF_BASE_URL}/api/v2/product/${encodeURIComponent(ean)}.json`;
-      const payload = await fetchJson(url);
+      const payload = await fetchJson(url, signal);
       if (!payload || Number(payload.status) !== 1) {
         return null;
       }

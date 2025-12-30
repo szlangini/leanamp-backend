@@ -83,18 +83,18 @@ run('food catalog api', () => {
   it('search skips providers when internal-only', async () => {
     const calls = { off: 0, usda: 0 };
     const offProvider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.off += 1;
         return [];
       },
-      barcode: async () => null
+      barcode: async (_ean, _signal) => null
     };
     const usdaProvider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.usda += 1;
         return [];
       },
-      barcode: async () => null
+      barcode: async (_ean, _signal) => null
     };
 
     const internalOnlyApp = buildApp({
@@ -146,11 +146,11 @@ run('food catalog api', () => {
     const ean = '1234567890123';
 
     const provider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.search += 1;
         return [];
       },
-      barcode: async () => {
+      barcode: async (_ean, _signal) => {
         calls.barcode += 1;
         return {
           source: 'OFF',
@@ -209,8 +209,8 @@ run('food catalog api', () => {
   it('barcode prefers OFF match over fallback', async () => {
     const ean = '9999999999999';
     const provider: FoodCatalogProvider = {
-      search: async () => [],
-      barcode: async () => ({
+      search: async (_query, _limit, _signal) => [],
+      barcode: async (_ean, _signal) => ({
         source: 'OFF',
         externalId: ean,
         barcode: ean,
@@ -255,8 +255,8 @@ run('food catalog api', () => {
   it('barcode uses internal fallback when providers miss', async () => {
     const ean = '8888888888888';
     const provider: FoodCatalogProvider = {
-      search: async () => [],
-      barcode: async () => null
+      search: async (_query, _limit, _signal) => [],
+      barcode: async (_ean, _signal) => null
     };
 
     const internalFallbackApp = buildApp({
@@ -283,9 +283,78 @@ run('food catalog api', () => {
     await internalFallbackApp.close();
   });
 
+  it('search returns cache-only when provider fails', async () => {
+    const calls = { search: 0 };
+    const provider: FoodCatalogProvider = {
+      search: async (_query, _limit, _signal) => {
+        calls.search += 1;
+        throw new Error('provider down');
+      }
+    };
+
+    const cachedApp = buildApp({
+      foodCatalog: {
+        providers: { off: provider },
+        enableOff: true,
+        enableUsda: false,
+        internalOnly: false,
+        cacheOnlyOnProviderDown: true
+      }
+    });
+
+    const cachedAuth = await getAuthContext(cachedApp, offEmail);
+
+    const response = await cachedApp.inject({
+      method: 'GET',
+      url: '/food/catalog/search?q=zzzz-nohit&limit=5',
+      headers: cachedAuth.headers
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(Array.isArray(body.items)).toBe(true);
+    expect(calls.search).toBe(1);
+
+    await cachedApp.close();
+  });
+
+  it('barcode returns 404 when provider fails and cache-only is enabled', async () => {
+    const calls = { barcode: 0 };
+    const provider: FoodCatalogProvider = {
+      search: async (_query, _limit, _signal) => [],
+      barcode: async (_ean, _signal) => {
+        calls.barcode += 1;
+        throw new Error('provider down');
+      }
+    };
+
+    const cachedApp = buildApp({
+      foodCatalog: {
+        providers: { off: provider },
+        enableOff: true,
+        enableUsda: false,
+        internalOnly: false,
+        cacheOnlyOnProviderDown: true
+      }
+    });
+
+    const cachedAuth = await getAuthContext(cachedApp, offEmail);
+
+    const response = await cachedApp.inject({
+      method: 'GET',
+      url: '/food/catalog/barcode/7777777777777',
+      headers: cachedAuth.headers
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(calls.barcode).toBe(1);
+
+    await cachedApp.close();
+  });
+
   it('search ranks internal ahead of branded', async () => {
     const offProvider: FoodCatalogProvider = {
-      search: async () => [
+      search: async (_query, _limit, _signal) => [
         {
           source: 'OFF',
           externalId: 'off-branded-1',
@@ -303,7 +372,7 @@ run('food catalog api', () => {
           lastFetchedAt: new Date()
         }
       ],
-      barcode: async () => null
+      barcode: async (_ean, _signal) => null
     };
 
     const rankedApp = buildApp({
@@ -333,7 +402,7 @@ run('food catalog api', () => {
   it('search de-duplicates barcodes', async () => {
     const calls = { off: 0, usda: 0 };
     const offProvider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.off += 1;
         return [
           {
@@ -356,7 +425,7 @@ run('food catalog api', () => {
       }
     };
     const usdaProvider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.usda += 1;
         return [
           {
@@ -408,7 +477,7 @@ run('food catalog api', () => {
   it('search uses USDA provider and caches results', async () => {
     const calls = { search: 0 };
     const usdaProvider: FoodCatalogProvider = {
-      search: async () => {
+      search: async (_query, _limit, _signal) => {
         calls.search += 1;
         return [
           {
@@ -429,7 +498,7 @@ run('food catalog api', () => {
           }
         ];
       },
-      barcode: async () => null
+      barcode: async (_ean, _signal) => null
     };
 
     const usdaApp = buildApp({

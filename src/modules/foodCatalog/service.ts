@@ -6,6 +6,7 @@ import { createUsdaFdcProvider } from './providers/usdaFdc';
 import type { FoodCatalogProvider } from './providers/types';
 import type { FoodCatalogCandidate, FoodCatalogItem } from './types';
 import { compareForPick, compareRank } from './ranking';
+import { providerGuard, ProviderUnavailable } from './providerGuard';
 
 const defaultProviders = {
   off: createOpenFoodFactsProvider(),
@@ -13,6 +14,7 @@ const defaultProviders = {
 };
 
 const STOP_WORDS = new Set(['the', 'and', 'with', 'of', 'a', 'an', 'in', 'for', 'to']);
+const TTL_MS = env.FOOD_DBITEM_TTL_HOURS * 60 * 60 * 1000;
 
 type CatalogProviders = {
   off?: FoodCatalogProvider;
@@ -24,6 +26,7 @@ type CatalogOptions = {
   enableOff?: boolean;
   enableUsda?: boolean;
   internalOnly?: boolean;
+  cacheOnlyOnProviderDown?: boolean;
 };
 
 function toResponseItem(item: FoodDbItem): FoodCatalogItem {
@@ -56,6 +59,18 @@ export function normalizeNameKey(name: string) {
     .trim();
 
   return cleaned;
+}
+
+function isFresh(item: FoodDbItem, now = Date.now()) {
+  if (item.source === 'INTERNAL') {
+    return true;
+  }
+
+  if (!item.lastFetchedAt) {
+    return false;
+  }
+
+  return now - item.lastFetchedAt.getTime() < TTL_MS;
 }
 
 async function searchDbItems(query: string, limit: number, source?: FoodCatalogItem['source']) {
@@ -188,6 +203,8 @@ export async function searchCatalog(
   const enableOff = options.enableOff ?? env.FOOD_CATALOG_ENABLE_OFF;
   const enableUsda = options.enableUsda ?? env.FOOD_CATALOG_ENABLE_USDA;
   const internalOnly = options.internalOnly ?? env.FOOD_CATALOG_INTERNAL_ONLY;
+  const cacheOnlyOnProviderDown =
+    options.cacheOnlyOnProviderDown ?? env.FOOD_CATALOG_CACHE_ONLY_ON_PROVIDER_DOWN;
   const providers = getProviders(options);
 
   const dbItems = await searchDbItems(query, limit);
@@ -202,22 +219,40 @@ export async function searchCatalog(
   let remaining = Math.max(0, limit - ranked.length);
 
   if (enableOff && remaining > 0) {
-    const offItems = await providers.off.search(query, remaining);
-    const filtered = offItems.filter((item) => item.externalId);
-    if (filtered.length > 0) {
-      const upserted = await upsertProviderItems(filtered);
-      allItems = allItems.concat(upserted.map(toResponseItem));
-      ranked = mergeAndRank(allItems, limit);
-      remaining = Math.max(0, limit - ranked.length);
+    try {
+      const offItems = await providerGuard.guardedCall('off', (signal) =>
+        providers.off.search(query, remaining, signal)
+      );
+      const filtered = offItems.filter((item) => item.externalId);
+      if (filtered.length > 0) {
+        const upserted = await upsertProviderItems(filtered);
+        allItems = allItems.concat(upserted.map(toResponseItem));
+        ranked = mergeAndRank(allItems, limit);
+        remaining = Math.max(0, limit - ranked.length);
+      }
+    } catch (error) {
+      if (!(error instanceof ProviderUnavailable) || !cacheOnlyOnProviderDown) {
+        throw error;
+      }
+      return ranked;
     }
   }
 
   if (enableUsda && remaining > 0) {
-    const usdaItems = await providers.usda.search(query, remaining);
-    const filtered = usdaItems.filter((item) => item.externalId);
-    if (filtered.length > 0) {
-      const upserted = await upsertProviderItems(filtered);
-      allItems = allItems.concat(upserted.map(toResponseItem));
+    try {
+      const usdaItems = await providerGuard.guardedCall('usda', (signal) =>
+        providers.usda.search(query, remaining, signal)
+      );
+      const filtered = usdaItems.filter((item) => item.externalId);
+      if (filtered.length > 0) {
+        const upserted = await upsertProviderItems(filtered);
+        allItems = allItems.concat(upserted.map(toResponseItem));
+      }
+    } catch (error) {
+      if (!(error instanceof ProviderUnavailable) || !cacheOnlyOnProviderDown) {
+        throw error;
+      }
+      return ranked;
     }
   }
 
@@ -232,25 +267,38 @@ export async function getByBarcode(
   const enableOff = options.enableOff ?? env.FOOD_CATALOG_ENABLE_OFF;
   const enableUsda = options.enableUsda ?? env.FOOD_CATALOG_ENABLE_USDA;
   const internalOnly = options.internalOnly ?? env.FOOD_CATALOG_INTERNAL_ONLY;
+  const cacheOnlyOnProviderDown =
+    options.cacheOnlyOnProviderDown ?? env.FOOD_CATALOG_CACHE_ONLY_ON_PROVIDER_DOWN;
   const providers = getProviders(options);
 
   const cached = await prisma.foodDbItem.findFirst({
     where: { barcode: ean }
   });
 
-  if (cached) {
+  if (cached && isFresh(cached)) {
     return toResponseItem(cached);
   }
 
+  const cachedResponse = cached ? toResponseItem(cached) : null;
+
   if (internalOnly) {
-    return fallbackName ? searchInternalFallback(fallbackName) : null;
+    return cachedResponse ?? (fallbackName ? searchInternalFallback(fallbackName) : null);
   }
 
   if (enableOff && providers.off.barcode) {
-    const offItem = await providers.off.barcode(ean);
-    if (offItem && offItem.externalId) {
-      const [upserted] = await upsertProviderItems([offItem]);
-      return toResponseItem(upserted);
+    try {
+      const offItem = await providerGuard.guardedCall('off', (signal) =>
+        providers.off.barcode!(ean, signal)
+      );
+      if (offItem && offItem.externalId) {
+        const [upserted] = await upsertProviderItems([offItem]);
+        return toResponseItem(upserted);
+      }
+    } catch (error) {
+      if (error instanceof ProviderUnavailable && cacheOnlyOnProviderDown) {
+        return cachedResponse;
+      }
+      throw error;
     }
   }
 
@@ -262,12 +310,21 @@ export async function getByBarcode(
   }
 
   if (enableUsda && providers.usda.barcode) {
-    const usdaItem = await providers.usda.barcode(ean);
-    if (usdaItem && usdaItem.externalId) {
-      const [upserted] = await upsertProviderItems([usdaItem]);
-      return toResponseItem(upserted);
+    try {
+      const usdaItem = await providerGuard.guardedCall('usda', (signal) =>
+        providers.usda.barcode!(ean, signal)
+      );
+      if (usdaItem && usdaItem.externalId) {
+        const [upserted] = await upsertProviderItems([usdaItem]);
+        return toResponseItem(upserted);
+      }
+    } catch (error) {
+      if (error instanceof ProviderUnavailable && cacheOnlyOnProviderDown) {
+        return cachedResponse;
+      }
+      throw error;
     }
   }
 
-  return null;
+  return cachedResponse;
 }

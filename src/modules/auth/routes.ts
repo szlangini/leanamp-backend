@@ -6,12 +6,12 @@ import { createEmailOtp, deleteAccount, revokeSession, verifyEmailOtp } from './
 
 export default async function authRoutes(app: FastifyInstance) {
   const startRateLimit = {
-    max: env.NODE_ENV === 'test' ? 1000 : 5,
+    max: env.NODE_ENV === 'test' ? 1000 : env.RATE_LIMIT_AUTH_START_PER_MIN,
     timeWindow: '1 minute'
   };
 
   const verifyRateLimit = {
-    max: env.NODE_ENV === 'test' ? 1000 : 10,
+    max: env.NODE_ENV === 'test' ? 1000 : env.RATE_LIMIT_AUTH_VERIFY_PER_MIN,
     timeWindow: '1 minute'
   };
 
