@@ -52,11 +52,16 @@ function unwrapObjectSchema(schema: z.ZodTypeAny): z.ZodObject<Record<string, z.
 export function createRegistry(): OpenApiRegistry {
   const schemas: Record<string, JsonSchema> = {};
 
+  const toJsonSchema = zodToJsonSchema as unknown as (
+    schema: z.ZodTypeAny,
+    options: unknown
+  ) => JsonSchema;
+
   const toSchema = (schema: z.ZodTypeAny) => {
-    const json = zodToJsonSchema(schema, {
+    const json = toJsonSchema(schema, {
       target: 'openApi3',
       $refStrategy: 'none'
-    }) as JsonSchema;
+    });
 
     return stripJsonSchema(json);
   };

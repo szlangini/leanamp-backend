@@ -124,7 +124,7 @@ function buildUpdateData(input: ProfileUpdateInput): Prisma.ProfileUpdateInput {
   if (input.targetRateKgPerWeek !== undefined) data.targetRateKgPerWeek = input.targetRateKgPerWeek;
   if (input.autoAdjustKcal !== undefined) data.autoAdjustKcal = input.autoAdjustKcal;
   if (input.weeklyAdjustLog !== undefined)
-    data.weeklyAdjustLog = input.weeklyAdjustLog as Prisma.JsonValue;
+    data.weeklyAdjustLog = input.weeklyAdjustLog as Prisma.InputJsonValue;
   if (input.lastAdjustedWeekKey !== undefined) data.lastAdjustedWeekKey = input.lastAdjustedWeekKey;
   if (input.neatFactor !== undefined) data.neatFactor = input.neatFactor;
   if (input.baselineSteps !== undefined) data.baselineSteps = input.baselineSteps;

@@ -1,6 +1,6 @@
-import type { FastifyInstance } from 'fastify';
-import fastifySwagger from '@fastify/swagger';
-import fastifySwaggerUi from '@fastify/swagger-ui';
+import type { FastifyInstance, FastifyPluginAsync } from 'fastify';
+import fastifySwagger, { type SwaggerOptions } from '@fastify/swagger';
+import fastifySwaggerUi, { type FastifySwaggerUiOptions } from '@fastify/swagger-ui';
 import { env } from '../config/env';
 import { buildOpenApi } from '../openapi/build';
 
@@ -11,21 +11,20 @@ export default async function openapiPlugin(app: FastifyInstance) {
 
   const openapi = buildOpenApi();
 
-  await app.register(fastifySwagger, {
-    openapi,
-    exposeRoute: false
+  const swaggerPlugin = fastifySwagger as FastifyPluginAsync<SwaggerOptions>;
+  const swaggerUiPlugin = fastifySwaggerUi as FastifyPluginAsync<FastifySwaggerUiOptions>;
+
+  await app.register(swaggerPlugin, {
+    openapi
   });
 
-  await app.register(fastifySwaggerUi, {
+  await app.register(swaggerUiPlugin, {
     routePrefix: '/docs',
     uiConfig: {
       docExpansion: 'list',
       deepLinking: true
     },
-    staticCSP: true,
-    swaggerOptions: {
-      url: '/openapi.json'
-    }
+    staticCSP: true
   });
 
   app.get('/openapi.json', async () => openapi);

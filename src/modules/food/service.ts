@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../db/prisma';
 import type {
   FoodEntryCreateInput,
@@ -147,19 +148,7 @@ export async function updateFoodEntry(userId: string, id: string, input: FoodEnt
     return null;
   }
 
-  const data: {
-    dateISO?: Date;
-    name?: string;
-    kcal?: number;
-    protein?: number;
-    fat?: number;
-    carbs?: number;
-    fiber?: number;
-    multiplier?: number;
-    type?: string;
-    groupId?: string | null;
-    note?: string | null;
-  } = {};
+  const data: Prisma.FoodEntryUncheckedUpdateInput = {};
 
   if (input.dateISO !== undefined) data.dateISO = toDate(input.dateISO);
   if (input.name !== undefined) data.name = input.name;
