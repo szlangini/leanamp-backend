@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { prisma } from '../../db/prisma';
 import { getAuthContext, AuthContext } from '../../test/auth';
@@ -13,6 +13,7 @@ run('ai api', () => {
 
   beforeAll(async () => {
     await prisma.$connect();
+    await prisma.aiCallLog.deleteMany();
     await prisma.emailOtp.deleteMany({ where: { email } });
     await prisma.user.deleteMany({ where: { email } });
 
@@ -34,7 +35,6 @@ run('ai api', () => {
       ai: {
         provider,
         cache: new Map(),
-        counters: new Map(),
         limits: {
           dailyTotal: 100,
           dailyText: 100,
@@ -45,6 +45,10 @@ run('ai api', () => {
     });
 
     auth = await getAuthContext(app, email);
+  });
+
+  beforeEach(async () => {
+    await prisma.aiCallLog.deleteMany();
   });
 
   afterAll(async () => {
@@ -83,7 +87,6 @@ run('ai api', () => {
       ai: {
         provider: badProvider,
         cache: new Map(),
-        counters: new Map(),
         limits: {
           dailyTotal: 100,
           dailyText: 100,
@@ -110,7 +113,7 @@ run('ai api', () => {
     await badApp.close();
   });
 
-  it('enforces daily caps', async () => {
+  it('enforces daily caps across restarts', async () => {
     const capProvider: AiProvider = {
       generateText: async () =>
         JSON.stringify({
@@ -132,7 +135,6 @@ run('ai api', () => {
       ai: {
         provider: capProvider,
         cache: new Map(),
-        counters: new Map(),
         limits: {
           dailyTotal: 1,
           dailyText: 1,
@@ -153,10 +155,27 @@ run('ai api', () => {
 
     expect(first.statusCode).toBe(200);
 
-    const second = await capApp.inject({
+    await capApp.close();
+
+    const capApp2 = buildApp({
+      ai: {
+        provider: capProvider,
+        cache: new Map(),
+        limits: {
+          dailyTotal: 1,
+          dailyText: 1,
+          dailyImage: 1,
+          dailyHeavy: 1
+        }
+      }
+    });
+
+    const capAuth2 = await getAuthContext(capApp2, 'ai-cap@leanamp.local');
+
+    const second = await capApp2.inject({
       method: 'POST',
       url: '/ai/food/describe',
-      headers: capAuth.headers,
+      headers: capAuth2.headers,
       payload: { text: 'Pasta with sauce' }
     });
 
@@ -165,6 +184,6 @@ run('ai api', () => {
 
     await prisma.emailOtp.deleteMany({ where: { email: 'ai-cap@leanamp.local' } });
     await prisma.user.deleteMany({ where: { email: 'ai-cap@leanamp.local' } });
-    await capApp.close();
+    await capApp2.close();
   });
 });

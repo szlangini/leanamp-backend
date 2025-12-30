@@ -11,7 +11,6 @@ import { createAiService, AiServiceError, type AiProvider } from './service';
 export type AiRoutesOptions = {
   provider?: AiProvider;
   cache?: Map<string, { expiresAt: number; payload: unknown }>;
-  counters?: Map<string, number>;
   limits?: {
     dailyTotal?: number;
     dailyText?: number;

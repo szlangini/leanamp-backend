@@ -30,7 +30,6 @@ type BuildAppOptions = {
   ai?: {
     provider?: AiProvider;
     cache?: Map<string, { expiresAt: number; payload: unknown }>;
-    counters?: Map<string, number>;
     limits?: {
       dailyTotal?: number;
       dailyText?: number;
@@ -109,7 +108,6 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     prefix: '/ai',
     provider: options.ai?.provider,
     cache: options.ai?.cache,
-    counters: options.ai?.counters,
     limits: options.ai?.limits,
     now: options.ai?.now
   });

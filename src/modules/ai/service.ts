@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { env } from '../../config/env';
 import { prisma } from '../../db/prisma';
 import {
@@ -13,7 +13,12 @@ import {
   type AiActivityEstimateResponse,
   type AiFoodDescribeResponse
 } from './schemas';
-import { PROMPT_VERSION, buildActivityPrompt, buildFoodDescribePrompt, buildInsightsPrompt } from './prompts';
+import {
+  PROMPT_VERSION,
+  buildActivityPrompt,
+  buildFoodDescribePrompt,
+  buildInsightsPrompt
+} from './prompts';
 import { callGeminiText, callGeminiVision } from './provider/gemini';
 
 const EMOJI_MAP: Record<string, string> = {
@@ -22,7 +27,16 @@ const EMOJI_MAP: Record<string, string> = {
   '[FIX]': '🛠️'
 };
 
-export type AiKind = 'INSIGHTS' | 'ACTIVITY' | 'FOOD_TEXT' | 'VOICE_TO_MEAL' | 'FOOD_PHOTO' | 'BODYFAT';
+const IMAGE_KINDS: AiKind[] = ['FOOD_PHOTO', 'BODYFAT'];
+const HEAVY_KINDS: AiKind[] = ['INSIGHTS'];
+
+export type AiKind =
+  | 'INSIGHTS'
+  | 'ACTIVITY'
+  | 'FOOD_TEXT'
+  | 'VOICE_TO_MEAL'
+  | 'FOOD_PHOTO'
+  | 'BODYFAT';
 
 export type AiProvider = {
   generateText: (prompt: string) => Promise<string>;
@@ -34,8 +48,6 @@ type CacheEntry = {
   payload: unknown;
 };
 
-type AiCounters = Map<string, number>;
-
 type AiLimits = {
   dailyTotal: number;
   dailyText: number;
@@ -43,10 +55,16 @@ type AiLimits = {
   dailyHeavy: number;
 };
 
+type DailyCounts = {
+  total: number;
+  text: number;
+  image: number;
+  heavy: number;
+};
+
 type AiServiceOptions = {
   provider?: AiProvider;
   cache?: Map<string, CacheEntry>;
-  counters?: AiCounters;
   now?: () => Date;
   limits?: Partial<AiLimits>;
 };
@@ -82,11 +100,12 @@ const defaultProvider: AiProvider = {
 };
 
 const defaultCache = new Map<string, CacheEntry>();
-const defaultCounters: AiCounters = new Map();
 const TTL_MS = env.AI_CACHE_TTL_HOURS * 60 * 60 * 1000;
 
-function getDayKey(now: Date) {
-  return now.toISOString().slice(0, 10);
+function getDayRange(now: Date) {
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return { start, end };
 }
 
 function hashPayload(payload: string) {
@@ -96,40 +115,6 @@ function hashPayload(payload: string) {
 function cacheKey(kind: AiKind, model: string, input: unknown) {
   const payload = JSON.stringify({ kind, model, input, promptVersion: PROMPT_VERSION });
   return hashPayload(payload);
-}
-
-function getCounterKey(day: string, user: string, bucket: string) {
-  return `${day}:${user}:${bucket}`;
-}
-
-function incrementCounter(counters: AiCounters, key: string, limit: number) {
-  const current = counters.get(key) ?? 0;
-  if (current >= limit) {
-    throw new AiServiceError('AI_RATE_LIMIT', 429, 'AI daily limit reached');
-  }
-  counters.set(key, current + 1);
-}
-
-function enforceDailyCaps(
-  counters: AiCounters,
-  now: Date,
-  userId: string,
-  kind: AiKind,
-  limits: AiLimits
-) {
-  const day = getDayKey(now);
-  incrementCounter(counters, getCounterKey(day, userId, 'total'), limits.dailyTotal);
-
-  const isImage = kind === 'FOOD_PHOTO' || kind === 'BODYFAT';
-  const isHeavy = kind === 'INSIGHTS';
-  if (isImage) {
-    incrementCounter(counters, getCounterKey(day, userId, 'image'), limits.dailyImage);
-  } else {
-    incrementCounter(counters, getCounterKey(day, userId, 'text'), limits.dailyText);
-  }
-  if (isHeavy) {
-    incrementCounter(counters, getCounterKey(day, userId, 'heavy'), limits.dailyHeavy);
-  }
 }
 
 function replaceTokens(value: string) {
@@ -154,13 +139,112 @@ function applyInsightsReplacements(response: AiInsightsResponse) {
   };
 }
 
-async function logCall(
-  data: Prisma.AiCallLogCreateInput,
-  options: { skip?: boolean } = {}
+async function getDailyCounts(
+  tx: Prisma.TransactionClient,
+  userId: string | null,
+  start: Date,
+  end: Date
+): Promise<DailyCounts> {
+  const where = {
+    createdAt: {
+      gte: start,
+      lt: end
+    },
+    userId: userId ?? null
+  };
+
+  const rows = await tx.aiCallLog.groupBy({
+    by: ['kind'],
+    where,
+    _count: { _all: true }
+  });
+
+  const counts = {
+    total: 0,
+    text: 0,
+    image: 0,
+    heavy: 0
+  };
+
+  for (const row of rows) {
+    const count = row._count._all;
+    const kind = row.kind as AiKind;
+    counts.total += count;
+    if (IMAGE_KINDS.includes(kind)) {
+      counts.image += count;
+    } else {
+      counts.text += count;
+    }
+    if (HEAVY_KINDS.includes(kind)) {
+      counts.heavy += count;
+    }
+  }
+
+  return counts;
+}
+
+function enforceDailyCaps(counts: DailyCounts, kind: AiKind, limits: AiLimits) {
+  if (counts.total >= limits.dailyTotal) {
+    throw new AiServiceError('AI_RATE_LIMIT', 429, 'AI daily limit reached');
+  }
+
+  if (IMAGE_KINDS.includes(kind)) {
+    if (counts.image >= limits.dailyImage) {
+      throw new AiServiceError('AI_RATE_LIMIT', 429, 'AI daily limit reached');
+    }
+  } else if (counts.text >= limits.dailyText) {
+    throw new AiServiceError('AI_RATE_LIMIT', 429, 'AI daily limit reached');
+  }
+
+  if (HEAVY_KINDS.includes(kind) && counts.heavy >= limits.dailyHeavy) {
+    throw new AiServiceError('AI_RATE_LIMIT', 429, 'AI daily limit reached');
+  }
+}
+
+async function reserveLog(
+  userId: string | null,
+  kind: AiKind,
+  model: string,
+  inputBytes: number,
+  isEstimate: boolean,
+  now: Date,
+  limits: AiLimits
 ) {
-  if (options.skip) return;
+  return prisma.$transaction(async (tx) => {
+    const { start, end } = getDayRange(now);
+    const counts = await getDailyCounts(tx, userId, start, end);
+    enforceDailyCaps(counts, kind, limits);
+
+    const log = await tx.aiCallLog.create({
+      data: {
+        userId,
+        kind,
+        provider: 'gemini',
+        model,
+        latencyMs: 0,
+        success: false,
+        inputBytes,
+        outputBytes: 0,
+        promptVersion: PROMPT_VERSION,
+        isEstimate
+      }
+    });
+
+    return log.id;
+  });
+}
+
+async function finalizeLog(logId: string | null, latencyMs: number, success: boolean, outputBytes: number) {
+  if (!logId) return;
   try {
-    await prisma.aiCallLog.create({ data });
+    await prisma.aiCallLog.update({
+      where: { id: logId },
+      data: {
+        latencyMs,
+        success,
+        outputBytes
+      }
+    });
   } catch {
     // ignore logging failures
   }
@@ -169,20 +253,35 @@ async function logCall(
 async function runAiRequest<T>(
   provider: AiProvider,
   cache: Map<string, CacheEntry>,
-  counters: AiCounters,
   nowProvider: () => Date,
   limits: AiLimits,
   context: RunContext
 ): Promise<T> {
   const now = nowProvider();
-  const userKey = context.userId ?? 'dev';
   const key = cacheKey(context.kind, context.model, context.cacheInput);
   const cached = cache.get(key);
   if (cached && cached.expiresAt > now.getTime()) {
     return cached.payload as T;
   }
 
-  enforceDailyCaps(counters, now, userKey, context.kind, limits);
+  const inputBytes = Buffer.byteLength(context.prompt, 'utf8');
+  let logId: string | null = null;
+  try {
+    logId = await reserveLog(
+      context.userId,
+      context.kind,
+      context.model,
+      inputBytes,
+      context.isEstimate,
+      now,
+      limits
+    );
+  } catch (error) {
+    if (error instanceof AiServiceError) {
+      throw error;
+    }
+    throw new AiServiceError('AI_PROVIDER_DOWN', 502, 'AI provider unavailable');
+  }
 
   const started = Date.now();
   let outputText = '';
@@ -204,6 +303,7 @@ async function runAiRequest<T>(
     } catch {
       throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
     }
+
     const parsed = context.schema.safeParse(parsedJson);
     if (!parsed.success) {
       throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
@@ -226,25 +326,14 @@ async function runAiRequest<T>(
     throw new AiServiceError('AI_PROVIDER_DOWN', 502, 'AI provider unavailable');
   } finally {
     const latencyMs = Math.max(0, Date.now() - started);
-    await logCall({
-      userId: context.userId ?? null,
-      kind: context.kind,
-      provider: 'gemini',
-      model: context.model,
-      latencyMs,
-      success,
-      inputBytes: Buffer.byteLength(context.prompt, 'utf8'),
-      outputBytes: Buffer.byteLength(outputText ?? '', 'utf8'),
-      promptVersion: PROMPT_VERSION,
-      isEstimate: context.isEstimate
-    });
+    const outputBytes = Buffer.byteLength(outputText ?? '', 'utf8');
+    await finalizeLog(logId, latencyMs, success, outputBytes);
   }
 }
 
 export function createAiService(options: AiServiceOptions = {}) {
   const provider = options.provider ?? defaultProvider;
   const cache = options.cache ?? defaultCache;
-  const counters = options.counters ?? defaultCounters;
   const nowProvider = options.now ?? (() => new Date());
   const limits: AiLimits = {
     dailyTotal: env.AI_DAILY_CALLS_MAX,
@@ -257,23 +346,16 @@ export function createAiService(options: AiServiceOptions = {}) {
   return {
     async insights(userId: string | null, input: AiInsightsInput): Promise<AiInsightsResponse> {
       const prompt = buildInsightsPrompt(input);
-      return runAiRequest<AiInsightsResponse>(
-        provider,
-        cache,
-        counters,
-        nowProvider,
-        limits,
-        {
-          userId,
-          kind: 'INSIGHTS',
-          prompt,
-          cacheInput: input,
-          schema: AiInsightsResponseSchema,
-          model: env.GEMINI_MODEL_TEXT,
-          isEstimate: false,
-          postProcess: (value) => applyInsightsReplacements(value as AiInsightsResponse)
-        }
-      );
+      return runAiRequest<AiInsightsResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'INSIGHTS',
+        prompt,
+        cacheInput: input,
+        schema: AiInsightsResponseSchema,
+        model: env.GEMINI_MODEL_TEXT,
+        isEstimate: false,
+        postProcess: (value) => applyInsightsReplacements(value as AiInsightsResponse)
+      });
     },
 
     async activityEstimate(
@@ -281,22 +363,15 @@ export function createAiService(options: AiServiceOptions = {}) {
       input: AiActivityEstimateInput
     ): Promise<AiActivityEstimateResponse> {
       const prompt = buildActivityPrompt(input);
-      return runAiRequest<AiActivityEstimateResponse>(
-        provider,
-        cache,
-        counters,
-        nowProvider,
-        limits,
-        {
-          userId,
-          kind: 'ACTIVITY',
-          prompt,
-          cacheInput: input,
-          schema: AiActivityEstimateResponseSchema,
-          model: env.GEMINI_MODEL_TEXT,
-          isEstimate: true
-        }
-      );
+      return runAiRequest<AiActivityEstimateResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'ACTIVITY',
+        prompt,
+        cacheInput: input,
+        schema: AiActivityEstimateResponseSchema,
+        model: env.GEMINI_MODEL_TEXT,
+        isEstimate: true
+      });
     },
 
     async foodDescribe(
@@ -304,22 +379,15 @@ export function createAiService(options: AiServiceOptions = {}) {
       input: AiFoodDescribeInput
     ): Promise<AiFoodDescribeResponse> {
       const prompt = buildFoodDescribePrompt(input, 'text');
-      return runAiRequest<AiFoodDescribeResponse>(
-        provider,
-        cache,
-        counters,
-        nowProvider,
-        limits,
-        {
-          userId,
-          kind: 'FOOD_TEXT',
-          prompt,
-          cacheInput: input,
-          schema: AiFoodDescribeResponseSchema,
-          model: env.GEMINI_MODEL_TEXT,
-          isEstimate: true
-        }
-      );
+      return runAiRequest<AiFoodDescribeResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'FOOD_TEXT',
+        prompt,
+        cacheInput: input,
+        schema: AiFoodDescribeResponseSchema,
+        model: env.GEMINI_MODEL_TEXT,
+        isEstimate: true
+      });
     },
 
     async voiceToMeal(
@@ -327,22 +395,15 @@ export function createAiService(options: AiServiceOptions = {}) {
       input: AiFoodDescribeInput
     ): Promise<AiFoodDescribeResponse> {
       const prompt = buildFoodDescribePrompt(input, 'voice');
-      return runAiRequest<AiFoodDescribeResponse>(
-        provider,
-        cache,
-        counters,
-        nowProvider,
-        limits,
-        {
-          userId,
-          kind: 'VOICE_TO_MEAL',
-          prompt,
-          cacheInput: input,
-          schema: AiFoodDescribeResponseSchema,
-          model: env.GEMINI_MODEL_TEXT,
-          isEstimate: true
-        }
-      );
+      return runAiRequest<AiFoodDescribeResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'VOICE_TO_MEAL',
+        prompt,
+        cacheInput: input,
+        schema: AiFoodDescribeResponseSchema,
+        model: env.GEMINI_MODEL_TEXT,
+        isEstimate: true
+      });
     }
   };
 }
