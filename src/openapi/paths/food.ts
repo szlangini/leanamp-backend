@@ -9,6 +9,12 @@ import {
   MealGroupCreateSchema,
   MealGroupUpdateSchema
 } from '../../modules/food/schemas';
+import {
+  FoodCatalogBarcodeParamSchema,
+  FoodCatalogBarcodeQuerySchema,
+  FoodCatalogItemSchema,
+  FoodCatalogSearchQuerySchema
+} from '../../modules/foodCatalog/schemas';
 import type { OpenApiRegistry } from '../registry';
 import { DateTimeSchema, ErrorResponseSchema, UUIDSchema } from './shared';
 
@@ -61,6 +67,9 @@ export function registerFoodPaths(
   const templateSchema = registry.addSchema('FoodTemplate', FoodTemplateSchema);
   const mealGroupSchema = registry.addSchema('MealGroup', MealGroupSchema);
   const foodEntrySchema = registry.addSchema('FoodEntry', FoodEntrySchema);
+  const catalogResponseSchema = registry.schema(
+    z.object({ items: z.array(FoodCatalogItemSchema) })
+  );
 
   registry.addPath(paths, '/food/templates', 'get', {
     tags: ['food'],
@@ -272,6 +281,63 @@ export function registerFoodPaths(
     responses: {
       204: {
         description: 'No Content'
+      },
+      400: {
+        description: 'Bad Request',
+        content: {
+          'application/json': {
+            schema: errorSchema
+          }
+        }
+      },
+      404: {
+        description: 'Not Found',
+        content: {
+          'application/json': {
+            schema: errorSchema
+          }
+        }
+      }
+    }
+  });
+
+  registry.addPath(paths, '/food/catalog/search', 'get', {
+    tags: ['food'],
+    parameters: registry.parametersFromSchema(FoodCatalogSearchQuerySchema, 'query'),
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: catalogResponseSchema
+          }
+        }
+      },
+      400: {
+        description: 'Bad Request',
+        content: {
+          'application/json': {
+            schema: errorSchema
+          }
+        }
+      }
+    }
+  });
+
+  registry.addPath(paths, '/food/catalog/barcode/{ean}', 'get', {
+    tags: ['food'],
+    parameters: [
+      ...registry.parametersFromSchema(FoodCatalogBarcodeParamSchema, 'path'),
+      ...registry.parametersFromSchema(FoodCatalogBarcodeQuerySchema, 'query')
+    ],
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: catalogResponseSchema
+          }
+        }
       },
       400: {
         description: 'Bad Request',

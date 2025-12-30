@@ -13,6 +13,7 @@ Leanamp backend API (Fastify + TypeScript + Prisma).
 - Tests: Vitest
 - Auth: Email OTP + JWT (access + refresh)
 - Docs: OpenAPI + Swagger UI
+- Catalog: Internal food DB + Open Food Facts + optional USDA FDC
 
 ## Architecture 🔗
 
@@ -20,6 +21,7 @@ Leanamp backend API (Fastify + TypeScript + Prisma).
 - `src/plugins/auth.ts` attaches `request.user` (JWT in prod, dev header in dev).
 - Prisma models live in `prisma/schema.prisma`, DB access via `src/db/prisma.ts`.
 - OpenAPI is generated from Zod schemas into `openapi/openapi.json`.
+- Food catalog searches DB first, then Open Food Facts (cache on miss).
 
 ## Local Run 🚀
 
@@ -66,6 +68,14 @@ curl -X POST localhost:3001/auth/email/verify \
 
 curl localhost:3001/profile \
   -H "authorization: Bearer REPLACE_ACCESS_TOKEN"
+
+# food catalog search (dev auth)
+pnpm db:seed
+curl "localhost:3001/food/catalog/search?q=chicken&limit=5" \
+  -H "x-dev-user: dev@local"
+
+# USDA (optional, requires API key)
+# set FOOD_CATALOG_ENABLE_USDA=true and USDA_API_KEY in .env (never commit secrets)
 ```
 
 ## Deployment 🌍

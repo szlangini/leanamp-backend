@@ -75,6 +75,34 @@ run('auth api', () => {
     expect(session?.revokedAt).not.toBeNull();
   });
 
+  it('rejects protected routes without token', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/profile'
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('unauthorized');
+  });
+
+  it('returns not implemented for apple/google auth', async () => {
+    const appleResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/apple'
+    });
+
+    expect(appleResponse.statusCode).toBe(501);
+    expect(appleResponse.json().error.code).toBe('NOT_IMPLEMENTED');
+
+    const googleResponse = await app.inject({
+      method: 'POST',
+      url: '/auth/google'
+    });
+
+    expect(googleResponse.statusCode).toBe(501);
+    expect(googleResponse.json().error.code).toBe('NOT_IMPLEMENTED');
+  });
+
   it('locks otp after too many attempts', async () => {
     const startResponse = await app.inject({
       method: 'POST',

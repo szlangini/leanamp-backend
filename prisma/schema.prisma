@@ -51,6 +51,18 @@ enum FoodEntryType {
   ai_text
 }
 
+enum FoodSource {
+  INTERNAL
+  OFF
+  USDA
+}
+
+enum FoodQuality {
+  HIGH
+  MED
+  LOW
+}
+
 enum ExtraIntensity {
   low
   moderate
@@ -308,6 +320,32 @@ model Settings {
   healthConnected   Boolean   @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FoodDbItem {
+  id             String      @id @default(uuid())
+  source         FoodSource
+  externalId     String?
+  barcode        String?
+  name           String
+  brand          String?
+  servingSizeG   Float?
+  kcalPer100g    Int
+  proteinPer100g Float
+  fatPer100g     Float
+  carbsPer100g   Float
+  fiberPer100g   Float?
+  quality        FoodQuality @default(MED)
+  isEstimate     Boolean     @default(false)
+  synonyms       Json?
+  internalSlug   String?     @unique
+  lastFetchedAt  DateTime?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([source, externalId])
+  @@index([barcode])
+  @@index([name])
 }
 
 model Session {

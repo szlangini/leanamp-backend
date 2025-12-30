@@ -1158,6 +1158,285 @@
         }
       }
     },
+    "/food/catalog/search": {
+      "get": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "INTERNAL",
+                              "OFF",
+                              "USDA"
+                            ]
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "barcode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "brand": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "servingSizeG": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "kcalPer100g": {
+                            "type": "integer"
+                          },
+                          "proteinPer100g": {
+                            "type": "number"
+                          },
+                          "fatPer100g": {
+                            "type": "number"
+                          },
+                          "carbsPer100g": {
+                            "type": "number"
+                          },
+                          "fiberPer100g": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "isEstimate": {
+                            "type": "boolean"
+                          },
+                          "quality": {
+                            "type": "string",
+                            "enum": [
+                              "HIGH",
+                              "MED",
+                              "LOW"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "source",
+                          "externalId",
+                          "barcode",
+                          "name",
+                          "brand",
+                          "servingSizeG",
+                          "kcalPer100g",
+                          "proteinPer100g",
+                          "fatPer100g",
+                          "carbsPer100g",
+                          "fiberPer100g",
+                          "isEstimate",
+                          "quality"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/food/catalog/barcode/{ean}": {
+      "get": {
+        "tags": [
+          "food"
+        ],
+        "parameters": [
+          {
+            "name": "ean",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{8,14}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "source": {
+                            "type": "string",
+                            "enum": [
+                              "INTERNAL",
+                              "OFF",
+                              "USDA"
+                            ]
+                          },
+                          "externalId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "barcode": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "brand": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "servingSizeG": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "kcalPer100g": {
+                            "type": "integer"
+                          },
+                          "proteinPer100g": {
+                            "type": "number"
+                          },
+                          "fatPer100g": {
+                            "type": "number"
+                          },
+                          "carbsPer100g": {
+                            "type": "number"
+                          },
+                          "fiberPer100g": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "isEstimate": {
+                            "type": "boolean"
+                          },
+                          "quality": {
+                            "type": "string",
+                            "enum": [
+                              "HIGH",
+                              "MED",
+                              "LOW"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "source",
+                          "externalId",
+                          "barcode",
+                          "name",
+                          "brand",
+                          "servingSizeG",
+                          "kcalPer100g",
+                          "proteinPer100g",
+                          "fatPer100g",
+                          "carbsPer100g",
+                          "fiberPer100g",
+                          "isEstimate",
+                          "quality"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "items"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/water": {
       "get": {
         "tags": [
