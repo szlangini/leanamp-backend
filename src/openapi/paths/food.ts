@@ -7,6 +7,7 @@ import {
   FoodTemplateCreateSchema,
   IdParamSchema,
   MealGroupCreateSchema,
+  MealGroupQuerySchema,
   MealGroupUpdateSchema
 } from '../../modules/food/schemas';
 import {
@@ -143,6 +144,29 @@ export function registerFoodPaths(
         content: {
           'application/json': {
             schema: mealGroupSchema
+          }
+        }
+      },
+      400: {
+        description: 'Bad Request',
+        content: {
+          'application/json': {
+            schema: errorSchema
+          }
+        }
+      }
+    }
+  });
+
+  registry.addPath(paths, '/food/meal-groups', 'get', {
+    tags: ['food'],
+    parameters: registry.parametersFromSchema(MealGroupQuerySchema, 'query'),
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: registry.schema(z.array(MealGroupSchema))
           }
         }
       },

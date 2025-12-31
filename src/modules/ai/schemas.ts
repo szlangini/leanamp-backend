@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 const TextSchema = z.string().min(2).max(500);
+const ImageBase64Schema = z.string().min(8).max(5_000_000);
+const ImageMimeSchema = z.string().regex(/^image\/[a-zA-Z0-9.+-]+$/);
 
 export const AiInsightsInputSchema = z.object({
   calories: z.object({
@@ -77,6 +79,12 @@ export const AiFoodDescribeInputSchema = z.object({
   locale: z.string().optional()
 });
 
+export const AiImageInputSchema = z.object({
+  imageBase64: ImageBase64Schema,
+  mimeType: ImageMimeSchema,
+  locale: z.string().optional()
+});
+
 export const AiFoodDescribeResponseSchema = z
   .object({
     status: z.literal('OK'),
@@ -93,9 +101,40 @@ export const AiFoodDescribeResponseSchema = z
   })
   .strict();
 
+export const AiFoodPhotoResponseSchema = z.union([
+  AiFoodDescribeResponseSchema,
+  z
+    .object({
+      status: z.enum(['NOT_FOOD', 'SEXUAL_CONTENT']),
+      reason: z.string().optional()
+    })
+    .strict()
+]);
+
+export const AiBodyfatPhotoResponseSchema = z.union([
+  z
+    .object({
+      status: z.literal('OK'),
+      bodyFatPct: z.number().min(0).max(80),
+      confidence: z.number().min(0).max(1),
+      notes: z.string(),
+      disclaimer: z.literal('ESTIMATE')
+    })
+    .strict(),
+  z
+    .object({
+      status: z.enum(['NO_BODY', 'SEXUAL_CONTENT']),
+      reason: z.string().optional()
+    })
+    .strict()
+]);
+
 export type AiInsightsInput = z.infer<typeof AiInsightsInputSchema>;
 export type AiInsightsResponse = z.infer<typeof AiInsightsResponseSchema>;
 export type AiActivityEstimateInput = z.infer<typeof AiActivityEstimateInputSchema>;
 export type AiActivityEstimateResponse = z.infer<typeof AiActivityEstimateResponseSchema>;
 export type AiFoodDescribeInput = z.infer<typeof AiFoodDescribeInputSchema>;
 export type AiFoodDescribeResponse = z.infer<typeof AiFoodDescribeResponseSchema>;
+export type AiImageInput = z.infer<typeof AiImageInputSchema>;
+export type AiFoodPhotoResponse = z.infer<typeof AiFoodPhotoResponseSchema>;
+export type AiBodyfatPhotoResponse = z.infer<typeof AiBodyfatPhotoResponseSchema>;

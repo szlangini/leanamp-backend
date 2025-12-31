@@ -79,6 +79,15 @@ export async function createMealGroup(userId: string, input: MealGroupCreateInpu
   });
 }
 
+export async function listMealGroups(userId: string, dateISO: string) {
+  await ensureUser(userId);
+
+  return prisma.mealGroup.findMany({
+    where: { userId, dateISO: toDate(dateISO) },
+    orderBy: { createdAt: 'asc' }
+  });
+}
+
 export async function updateMealGroup(
   userId: string,
   id: string,

@@ -3,6 +3,7 @@ import {
   CompletionCreateSchema,
   CompletionDeleteParamsSchema,
   CompletionDeleteQuerySchema,
+  CompletionQuerySchema,
   DayPlanCreateSchema,
   DayPlanUpdateSchema,
   ExerciseCreateSchema,
@@ -357,6 +358,29 @@ export function registerTrainingPaths(
       },
       404: {
         description: 'Not Found',
+        content: {
+          'application/json': {
+            schema: errorSchema
+          }
+        }
+      }
+    }
+  });
+
+  registry.addPath(paths, '/training/completions', 'get', {
+    tags: ['training'],
+    parameters: registry.parametersFromSchema(CompletionQuerySchema, 'query'),
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: registry.schema(z.array(CompletionLogSchema))
+          }
+        }
+      },
+      400: {
+        description: 'Bad Request',
         content: {
           'application/json': {
             schema: errorSchema

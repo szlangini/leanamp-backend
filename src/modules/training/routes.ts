@@ -4,6 +4,7 @@ import {
   CompletionCreateSchema,
   CompletionDeleteParamsSchema,
   CompletionDeleteQuerySchema,
+  CompletionQuerySchema,
   DayPlanCreateSchema,
   DayPlanUpdateSchema,
   ExtraActivityCreateSchema,
@@ -22,6 +23,7 @@ import {
   deleteDayPlan,
   deleteExercise,
   deleteExtraActivity,
+  listCompletions,
   listExtraActivity,
   listPlan,
   listTopSets,
@@ -195,6 +197,19 @@ export default async function trainingRoutes(app: FastifyInstance) {
     }
 
     return reply.send(completion);
+  });
+
+  app.get('/completions', async (request, reply) => {
+    const parsed = CompletionQuerySchema.safeParse(request.query ?? {});
+
+    if (!parsed.success) {
+      return badRequest(reply, 'Invalid completion query', parsed.error.flatten());
+    }
+
+    const from = new Date(parsed.data.from);
+    const to = new Date(parsed.data.to);
+    const completions = await listCompletions(request.user.id, from, to);
+    return reply.send(completions);
   });
 
   app.delete('/completions/:dateISO', async (request, reply) => {

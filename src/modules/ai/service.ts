@@ -4,10 +4,15 @@ import { env } from '../../config/env';
 import { prisma } from '../../db/prisma';
 import {
   AiActivityEstimateResponseSchema,
+  AiBodyfatPhotoResponseSchema,
   AiFoodDescribeResponseSchema,
+  AiFoodPhotoResponseSchema,
   AiInsightsResponseSchema,
   type AiActivityEstimateInput,
+  type AiBodyfatPhotoResponse,
   type AiFoodDescribeInput,
+  type AiFoodPhotoResponse,
+  type AiImageInput,
   type AiInsightsInput,
   type AiInsightsResponse,
   type AiActivityEstimateResponse,
@@ -16,7 +21,9 @@ import {
 import {
   PROMPT_VERSION,
   buildActivityPrompt,
+  buildBodyfatPrompt,
   buildFoodDescribePrompt,
+  buildFoodPhotoPrompt,
   buildInsightsPrompt
 } from './prompts';
 import { callGeminiText, callGeminiVision } from './provider/gemini';
@@ -40,7 +47,7 @@ export type AiKind =
 
 export type AiProvider = {
   generateText: (prompt: string) => Promise<string>;
-  generateVision?: (prompt: string) => Promise<string>;
+  generateVision?: (prompt: string, image: { data: string; mimeType: string }) => Promise<string>;
 };
 
 type CacheEntry = {
@@ -80,6 +87,8 @@ type RunContext = {
   model: string;
   isEstimate: boolean;
   useVision?: boolean;
+  image?: { data: string; mimeType: string };
+  inputBytes?: number;
   postProcess?: (payload: unknown) => unknown;
 };
 
@@ -264,7 +273,8 @@ async function runAiRequest<T>(
     return cached.payload as T;
   }
 
-  const inputBytes = Buffer.byteLength(context.prompt, 'utf8');
+  const inputBytes =
+    context.inputBytes ?? Buffer.byteLength(context.prompt, 'utf8');
   let logId: string | null = null;
   try {
     logId = await reserveLog(
@@ -289,10 +299,10 @@ async function runAiRequest<T>(
 
   try {
     if (context.useVision) {
-      if (!provider.generateVision) {
+      if (!provider.generateVision || !context.image) {
         throw new AiServiceError('AI_PROVIDER_DOWN', 502, 'AI provider unavailable');
       }
-      outputText = await provider.generateVision(context.prompt);
+      outputText = await provider.generateVision(context.prompt, context.image);
     } else {
       outputText = await provider.generateText(context.prompt);
     }
@@ -404,6 +414,74 @@ export function createAiService(options: AiServiceOptions = {}) {
         model: env.GEMINI_MODEL_TEXT,
         isEstimate: true
       });
+    },
+
+    async foodPhoto(
+      userId: string | null,
+      input: AiImageInput
+    ): Promise<AiFoodDescribeResponse> {
+      const prompt = buildFoodPhotoPrompt(input.locale);
+      const imageHash = hashPayload(input.imageBase64);
+      const response = await runAiRequest<AiFoodPhotoResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'FOOD_PHOTO',
+        prompt,
+        cacheInput: { imageHash, mimeType: input.mimeType, locale: input.locale },
+        schema: AiFoodPhotoResponseSchema,
+        model: env.GEMINI_MODEL_VISION,
+        isEstimate: true,
+        useVision: true,
+        image: { data: input.imageBase64, mimeType: input.mimeType },
+        inputBytes:
+          Buffer.byteLength(prompt, 'utf8') +
+          Buffer.byteLength(input.imageBase64, 'utf8')
+      });
+
+      if (response.status === 'NOT_FOOD') {
+        throw new AiServiceError('AI_IMAGE_NOT_FOOD', 422, 'Image is not food');
+      }
+      if (response.status === 'SEXUAL_CONTENT') {
+        throw new AiServiceError('AI_IMAGE_SEXUAL', 422, 'Image content not allowed');
+      }
+      if (response.status !== 'OK') {
+        throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
+      }
+
+      return response as AiFoodDescribeResponse;
+    },
+
+    async bodyfatPhoto(
+      userId: string | null,
+      input: AiImageInput
+    ): Promise<AiBodyfatPhotoResponse> {
+      const prompt = buildBodyfatPrompt(input.locale);
+      const imageHash = hashPayload(input.imageBase64);
+      const response = await runAiRequest<AiBodyfatPhotoResponse>(provider, cache, nowProvider, limits, {
+        userId,
+        kind: 'BODYFAT',
+        prompt,
+        cacheInput: { imageHash, mimeType: input.mimeType, locale: input.locale },
+        schema: AiBodyfatPhotoResponseSchema,
+        model: env.GEMINI_MODEL_VISION,
+        isEstimate: true,
+        useVision: true,
+        image: { data: input.imageBase64, mimeType: input.mimeType },
+        inputBytes:
+          Buffer.byteLength(prompt, 'utf8') +
+          Buffer.byteLength(input.imageBase64, 'utf8')
+      });
+
+      if (response.status === 'NO_BODY') {
+        throw new AiServiceError('AI_IMAGE_NO_BODY', 422, 'No body detected');
+      }
+      if (response.status === 'SEXUAL_CONTENT') {
+        throw new AiServiceError('AI_IMAGE_SEXUAL', 422, 'Image content not allowed');
+      }
+      if (response.status !== 'OK') {
+        throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
+      }
+
+      return response;
     }
   };
 }

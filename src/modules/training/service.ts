@@ -282,6 +282,21 @@ export async function deleteCompletion(userId: string, dateISO: string, dayId: s
   return result.count > 0;
 }
 
+export async function listCompletions(userId: string, from: Date, to: Date) {
+  await ensureUser(userId);
+
+  return prisma.completionLog.findMany({
+    where: {
+      userId,
+      dateISO: {
+        gte: from,
+        lte: to
+      }
+    },
+    orderBy: { dateISO: 'asc' }
+  });
+}
+
 export async function createExtraActivity(userId: string, input: ExtraActivityCreateInput) {
   await ensureUser(userId);
 

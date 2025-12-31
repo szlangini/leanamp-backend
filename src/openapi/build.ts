@@ -8,6 +8,7 @@ import { registerTrainingPaths } from './paths/training';
 import { registerAnalyticsPaths } from './paths/analytics';
 import { registerAuthPaths } from './paths/auth';
 import { registerAiPaths } from './paths/ai';
+import { registerWeightsPaths } from './paths/weights';
 
 function getPackageVersion() {
   try {
@@ -27,6 +28,7 @@ export function buildOpenApi() {
   registerAuthPaths(registry, paths);
   registerFoodPaths(registry, paths);
   registerWaterPaths(registry, paths);
+  registerWeightsPaths(registry, paths);
   registerTrainingPaths(registry, paths);
   registerAnalyticsPaths(registry, paths);
   registerAiPaths(registry, paths);

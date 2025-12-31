@@ -4,9 +4,18 @@ import { badRequest, sendError } from '../../utils/errors';
 import {
   AiActivityEstimateInputSchema,
   AiFoodDescribeInputSchema,
+  AiImageInputSchema,
   AiInsightsInputSchema
 } from './schemas';
 import { createAiService, AiServiceError, type AiProvider } from './service';
+
+const DISALLOWED_TEXT_PATTERNS = [
+  /\b(nude|nudes|porn|xxx|onlyfans|sex)\b/i
+];
+
+function isTextDisallowed(text: string) {
+  return DISALLOWED_TEXT_PATTERNS.some((pattern) => pattern.test(text));
+}
 
 export type AiRoutesOptions = {
   provider?: AiProvider;
@@ -105,6 +114,10 @@ export default async function aiRoutes(
         return badRequest(reply, 'Invalid food text payload', parsed.error.flatten());
       }
 
+      if (isTextDisallowed(parsed.data.text)) {
+        return sendError(reply, 422, 'AI_TEXT_DISALLOWED', 'Text content not allowed');
+      }
+
       try {
         const result = await service.foodDescribe(request.user?.id ?? null, parsed.data);
         return reply.send(result);
@@ -130,6 +143,10 @@ export default async function aiRoutes(
         return badRequest(reply, 'Invalid voice payload', parsed.error.flatten());
       }
 
+      if (isTextDisallowed(parsed.data.text)) {
+        return sendError(reply, 422, 'AI_TEXT_DISALLOWED', 'Text content not allowed');
+      }
+
       try {
         const result = await service.voiceToMeal(request.user?.id ?? null, parsed.data);
         return reply.send(result);
@@ -149,8 +166,21 @@ export default async function aiRoutes(
         rateLimit: standardRateLimit
       }
     },
-    async (_request, reply) => {
-      return sendError(reply, 501, 'NOT_IMPLEMENTED', 'Food photo AI not implemented');
+    async (request, reply) => {
+      const parsed = AiImageInputSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return badRequest(reply, 'Invalid food photo payload', parsed.error.flatten());
+      }
+
+      try {
+        const result = await service.foodPhoto(request.user?.id ?? null, parsed.data);
+        return reply.send(result);
+      } catch (error) {
+        if (error instanceof AiServiceError) {
+          return sendError(reply, error.status, error.code, error.message);
+        }
+        throw error;
+      }
     }
   );
 
@@ -161,8 +191,21 @@ export default async function aiRoutes(
         rateLimit: standardRateLimit
       }
     },
-    async (_request, reply) => {
-      return sendError(reply, 501, 'NOT_IMPLEMENTED', 'Bodyfat AI not implemented');
+    async (request, reply) => {
+      const parsed = AiImageInputSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return badRequest(reply, 'Invalid bodyfat photo payload', parsed.error.flatten());
+      }
+
+      try {
+        const result = await service.bodyfatPhoto(request.user?.id ?? null, parsed.data);
+        return reply.send(result);
+      } catch (error) {
+        if (error instanceof AiServiceError) {
+          return sendError(reply, error.status, error.code, error.message);
+        }
+        throw error;
+      }
     }
   );
 }

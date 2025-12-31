@@ -33,6 +33,10 @@ export const MealGroupUpdateSchema = z
     message: 'At least one field is required'
   });
 
+export const MealGroupQuerySchema = z.object({
+  date: DateISOSchema
+});
+
 export const FoodEntryCreateSchema = z.object({
   dateISO: DateISOSchema,
   name: z.string().min(1),

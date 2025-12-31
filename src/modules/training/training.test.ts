@@ -225,6 +225,17 @@ run('training api', () => {
 
     expect(completionResponse.statusCode).toBe(200);
 
+    const listResponse = await app.inject({
+      method: 'GET',
+      url: '/training/completions?from=2024-01-12&to=2024-01-12',
+      headers: auth.headers
+    });
+
+    expect(listResponse.statusCode).toBe(200);
+    const completions = listResponse.json();
+    expect(completions).toHaveLength(1);
+    expect(completions[0].dayId).toBe(day.id);
+
     const deleteResponse = await app.inject({
       method: 'DELETE',
       url: `/training/completions/2024-01-12?dayId=${day.id}`,

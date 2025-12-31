@@ -113,6 +113,102 @@ run('ai api', () => {
     await badApp.close();
   });
 
+  it('returns meal data for food photo', async () => {
+    const visionProvider: AiProvider = {
+      generateText: async () => JSON.stringify({}),
+      generateVision: async () =>
+        JSON.stringify({
+          status: 'OK',
+          mealName: 'Chicken Rice',
+          parsed: 'Chicken with rice',
+          kcal: 650,
+          protein: 45,
+          fat: 18,
+          carbs: 70,
+          fiber: 5,
+          confidence: 0.7,
+          questions: [],
+          disclaimer: 'ESTIMATE'
+        })
+    };
+
+    const visionApp = buildApp({
+      ai: {
+        provider: visionProvider,
+        cache: new Map(),
+        limits: {
+          dailyTotal: 100,
+          dailyText: 100,
+          dailyImage: 10,
+          dailyHeavy: 10
+        }
+      }
+    });
+
+    const visionAuth = await getAuthContext(visionApp, 'ai-photo@leanamp.local');
+
+    const response = await visionApp.inject({
+      method: 'POST',
+      url: '/ai/food/photo',
+      headers: visionAuth.headers,
+      payload: {
+        imageBase64: 'dGVzdA==',
+        mimeType: 'image/jpeg'
+      }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.mealName).toBe('Chicken Rice');
+
+    await prisma.emailOtp.deleteMany({ where: { email: 'ai-photo@leanamp.local' } });
+    await prisma.user.deleteMany({ where: { email: 'ai-photo@leanamp.local' } });
+    await visionApp.close();
+  });
+
+  it('rejects bodyfat photo without body', async () => {
+    const visionProvider: AiProvider = {
+      generateText: async () => JSON.stringify({}),
+      generateVision: async () =>
+        JSON.stringify({
+          status: 'NO_BODY',
+          reason: 'no person visible'
+        })
+    };
+
+    const visionApp = buildApp({
+      ai: {
+        provider: visionProvider,
+        cache: new Map(),
+        limits: {
+          dailyTotal: 100,
+          dailyText: 100,
+          dailyImage: 10,
+          dailyHeavy: 10
+        }
+      }
+    });
+
+    const visionAuth = await getAuthContext(visionApp, 'ai-body@leanamp.local');
+
+    const response = await visionApp.inject({
+      method: 'POST',
+      url: '/ai/bodyfat/photos',
+      headers: visionAuth.headers,
+      payload: {
+        imageBase64: 'dGVzdA==',
+        mimeType: 'image/jpeg'
+      }
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error.code).toBe('AI_IMAGE_NO_BODY');
+
+    await prisma.emailOtp.deleteMany({ where: { email: 'ai-body@leanamp.local' } });
+    await prisma.user.deleteMany({ where: { email: 'ai-body@leanamp.local' } });
+    await visionApp.close();
+  });
+
   it('enforces daily caps across restarts', async () => {
     const capProvider: AiProvider = {
       generateText: async () =>

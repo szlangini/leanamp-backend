@@ -3,6 +3,7 @@ import { env } from '../../../config/env';
 type GeminiOptions = {
   model: string;
   maxOutputTokens: number;
+  parts: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }>;
 };
 
 type GeminiResponse = {
@@ -19,7 +20,7 @@ function extractText(payload: GeminiResponse): string | null {
   return text.length > 0 ? text : null;
 }
 
-async function callGemini(prompt: string, options: GeminiOptions): Promise<string> {
+async function callGemini(options: GeminiOptions): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), env.AI_TIMEOUT_MS);
 
@@ -32,7 +33,7 @@ async function callGemini(prompt: string, options: GeminiOptions): Promise<strin
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: options.parts }],
         generationConfig: {
           maxOutputTokens: options.maxOutputTokens,
           temperature: 0.2,
@@ -61,15 +62,20 @@ async function callGemini(prompt: string, options: GeminiOptions): Promise<strin
 }
 
 export async function callGeminiText(prompt: string) {
-  return callGemini(prompt, {
+  return callGemini({
     model: env.GEMINI_MODEL_TEXT,
-    maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS_TEXT
+    maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS_TEXT,
+    parts: [{ text: prompt }]
   });
 }
 
-export async function callGeminiVision(prompt: string) {
-  return callGemini(prompt, {
+export async function callGeminiVision(
+  prompt: string,
+  image: { data: string; mimeType: string }
+) {
+  return callGemini({
     model: env.GEMINI_MODEL_VISION,
-    maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS_VISION
+    maxOutputTokens: env.AI_MAX_OUTPUT_TOKENS_VISION,
+    parts: [{ text: prompt }, { inlineData: image }]
   });
 }

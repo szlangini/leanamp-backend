@@ -7,6 +7,7 @@ import {
   FoodTemplateCreateSchema,
   IdParamSchema,
   MealGroupCreateSchema,
+  MealGroupQuerySchema,
   MealGroupUpdateSchema
 } from './schemas';
 import {
@@ -16,6 +17,7 @@ import {
   deleteFoodEntry,
   deleteFoodTemplate,
   listFoodEntries,
+  listMealGroups,
   listFoodTemplates,
   mealGroupExists,
   updateFoodEntry,
@@ -63,6 +65,17 @@ export default async function foodRoutes(app: FastifyInstance) {
 
     const group = await createMealGroup(request.user.id, parsed.data);
     return reply.send(group);
+  });
+
+  app.get('/meal-groups', async (request, reply) => {
+    const parsed = MealGroupQuerySchema.safeParse(request.query ?? {});
+
+    if (!parsed.success) {
+      return badRequest(reply, 'Invalid meal group query', parsed.error.flatten());
+    }
+
+    const groups = await listMealGroups(request.user.id, parsed.data.date);
+    return reply.send(groups);
   });
 
   app.patch('/meal-groups/:id', async (request, reply) => {

@@ -140,6 +140,23 @@ export const CompletionDeleteQuerySchema = z.object({
   dayId: z.string().uuid()
 });
 
+export const CompletionQuerySchema = z
+  .object({
+    from: DateISOSchema,
+    to: DateISOSchema
+  })
+  .superRefine((data, ctx) => {
+    const fromDate = new Date(data.from as string);
+    const toDate = new Date(data.to as string);
+    if (fromDate > toDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'from must be <= to',
+        path: ['from']
+      });
+    }
+  });
+
 export const ExtraIntensitySchema = z.enum(['low', 'moderate', 'high']);
 
 export const ExtraActivityCreateSchema = z.object({

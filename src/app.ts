@@ -7,6 +7,7 @@ import profileRoutes from './modules/profile/routes';
 import foodRoutes from './modules/food/routes';
 import foodCatalogRoutes from './modules/foodCatalog/routes';
 import waterRoutes from './modules/water/routes';
+import weightRoutes from './modules/weights/routes';
 import trainingRoutes from './modules/training/routes';
 import analyticsRoutes from './modules/analytics/routes';
 import aiRoutes from './modules/ai/routes';
@@ -102,6 +103,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     cacheOnlyOnProviderDown: options.foodCatalog?.cacheOnlyOnProviderDown
   });
   app.register(waterRoutes, { prefix: '/water' });
+  app.register(weightRoutes, { prefix: '/weights' });
   app.register(trainingRoutes, { prefix: '/training' });
   app.register(analyticsRoutes, { prefix: '/analytics' });
   app.register(aiRoutes, {

@@ -115,6 +115,17 @@ run('food api', () => {
     const updated = patchResponse.json();
     expect(updated.title).toBe('Morning');
     expect(updated.isExpanded).toBe(false);
+
+    const listResponse = await app.inject({
+      method: 'GET',
+      url: '/food/meal-groups?date=2024-01-01',
+      headers: auth.headers
+    });
+
+    expect(listResponse.statusCode).toBe(200);
+    const groups = listResponse.json();
+    expect(groups).toHaveLength(1);
+    expect(groups[0].id).toBe(group.id);
   });
 
   it('rejects empty meal group patch', async () => {

@@ -5,7 +5,7 @@ import { env } from '../config/env';
 import { buildOpenApi } from '../openapi/build';
 
 export default async function openapiPlugin(app: FastifyInstance) {
-  if (!env.OPENAPI_ENABLED) {
+  if (env.NODE_ENV === 'production' || !env.OPENAPI_ENABLED) {
     return;
   }
 
