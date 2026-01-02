@@ -34,6 +34,11 @@ const EMOJI_MAP: Record<string, string> = {
   '[FIX]': '🛠️'
 };
 
+const INSIGHTS_KEYS = new Set(['CAL', 'PROTEIN', 'WATER', 'MOVE', 'STRENGTH', 'RECOVERY']);
+const INSIGHTS_SEVERITIES = new Set(['P1', 'P2', 'P3']);
+const ACTION_PRIORITIES = new Set(['HIGH', 'MED', 'LOW']);
+const OVERALL_VALUES = new Set(['POS', 'NEU', 'NEG']);
+
 const IMAGE_KINDS: AiKind[] = ['FOOD_PHOTO', 'BODYFAT'];
 const HEAVY_KINDS: AiKind[] = ['INSIGHTS'];
 
@@ -89,6 +94,7 @@ type RunContext = {
   useVision?: boolean;
   image?: { data: string; mimeType: string };
   inputBytes?: number;
+  preProcess?: (payload: unknown) => unknown;
   postProcess?: (payload: unknown) => unknown;
 };
 
@@ -146,6 +152,218 @@ function applyInsightsReplacements(response: AiInsightsResponse) {
     })),
     warnings: response.warnings.map((warning) => replaceTokens(warning))
   };
+}
+
+function normalizeInsightsResponse(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+
+  const value = payload as Record<string, unknown>;
+  const bulletsRaw = Array.isArray(value.bullets) ? value.bullets : [];
+  const actionsRaw = Array.isArray(value.actions) ? value.actions : [];
+  const warningsRaw = Array.isArray(value.warnings) ? value.warnings : [];
+
+  const bullets = bulletsRaw
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const item = entry as Record<string, unknown>;
+      const k = typeof item.k === 'string' ? item.k.toUpperCase() : '';
+      const s = typeof item.s === 'string' ? item.s.toUpperCase() : '';
+      const t = typeof item.t === 'string' ? item.t.trim() : '';
+      if (!INSIGHTS_KEYS.has(k) || !INSIGHTS_SEVERITIES.has(s) || !t) {
+        return null;
+      }
+      return { k, s, t };
+    })
+    .filter(Boolean)
+    .slice(0, 5) as AiInsightsResponse['bullets'];
+
+  const actions = actionsRaw
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const item = entry as Record<string, unknown>;
+      const t = typeof item.t === 'string' ? item.t.trim() : '';
+      const p = typeof item.p === 'string' ? item.p.toUpperCase() : '';
+      if (!t || !ACTION_PRIORITIES.has(p)) {
+        return null;
+      }
+      return { t, p };
+    })
+    .filter(Boolean)
+    .slice(0, 3) as AiInsightsResponse['actions'];
+
+  const warnings = warningsRaw
+    .filter((entry) => typeof entry === 'string' && entry.trim().length > 0)
+    .map((entry) => entry.trim());
+
+  const overallRaw = typeof value.overall === 'string' ? value.overall.toUpperCase() : '';
+  const overall = OVERALL_VALUES.has(overallRaw) ? overallRaw : 'NEU';
+
+  return {
+    status: 'OK',
+    overall,
+    bullets,
+    actions,
+    warnings,
+    disclaimer: 'ESTIMATE'
+  };
+}
+
+function isLowDataInsights(input: AiInsightsInput) {
+  const macroSum =
+    input.macros.proteinG +
+    input.macros.fatG +
+    input.macros.carbsG +
+    (input.macros.fiberG ?? 0);
+
+  const signals = [
+    input.calories.intakeAvg > 100,
+    macroSum > 15,
+    input.water.litersAvg > 0.25,
+    input.movement.stepsAvg > 1000,
+    input.movement.exerciseCount > 0,
+    typeof input.weight.rateKgPerWeek === 'number' &&
+      Math.abs(input.weight.rateKgPerWeek) >= 0.1
+  ].filter(Boolean).length;
+
+  return signals <= 1;
+}
+
+function lowDataInsightsResponse(): AiInsightsResponse {
+  const message = 'Not enough data yet — log 7–14 days for reliable insights.';
+  return {
+    status: 'OK',
+    overall: 'NEU',
+    bullets: [
+      {
+        k: 'CAL',
+        s: 'P2',
+        t: `⚠️ ${message}`
+      }
+    ],
+    actions: [
+      {
+        t: 'Log food, water, steps, and training for 7–14 days so we can personalize.',
+        p: 'HIGH'
+      }
+    ],
+    warnings: [message],
+    disclaimer: 'ESTIMATE'
+  };
+}
+
+const MEAL_NAME_STOP = new Set(['and', 'with', 'of', 'a', 'an', 'the', 'in', 'on']);
+const ACTIVITY_NAME_STOP = new Set(['and', 'with', 'of', 'a', 'an', 'the', 'in', 'on']);
+
+function titleCase(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((token) => token[0]?.toUpperCase() + token.slice(1))
+    .join(' ');
+}
+
+function deriveMealName(text: string) {
+  const tokens = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !MEAL_NAME_STOP.has(token));
+  const picked = tokens.slice(0, 2);
+  const fallback = picked.length > 0 ? titleCase(picked.join(' ')) : 'Meal';
+  return fallback.trim() || 'Meal';
+}
+
+function round1(value: number) {
+  return Math.round(value * 10) / 10;
+}
+
+function sanitizeMealResponse(
+  input: AiFoodDescribeInput,
+  response: AiFoodDescribeResponse
+): AiFoodDescribeResponse {
+  const mealName = response.mealName?.trim();
+  const parsed = response.parsed?.trim();
+
+  return {
+    ...response,
+    mealName: mealName && mealName.length > 0 ? mealName : deriveMealName(input.text),
+    parsed: parsed && parsed.length > 0 ? parsed : input.text.trim(),
+    kcal: Math.round(response.kcal),
+    protein: round1(response.protein),
+    fat: round1(response.fat),
+    carbs: round1(response.carbs),
+    fiber: response.fiber === null ? null : round1(response.fiber)
+  };
+}
+
+function deriveActivityName(input: AiActivityEstimateInput) {
+  if ('type' in input && input.type) {
+    return titleCase(input.type);
+  }
+
+  const description = 'description' in input ? input.description ?? '' : '';
+  const tokens = description
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !ACTIVITY_NAME_STOP.has(token));
+  const picked = tokens.slice(0, 3);
+  const fallback = picked.length > 0 ? titleCase(picked.join(' ')) : 'Activity';
+  return fallback.trim() || 'Activity';
+}
+
+function sanitizeActivityResponse(
+  input: AiActivityEstimateInput,
+  response: AiActivityEstimateResponse
+): AiActivityEstimateResponse {
+  const hasDescription =
+    'description' in input && typeof input.description === 'string' && input.description.trim();
+  const suggestedName = response.suggestedName?.trim();
+
+  return {
+    ...response,
+    kcal: Math.round(response.kcal),
+    ...(hasDescription
+      ? {
+          suggestedName:
+            suggestedName && suggestedName.length > 0
+              ? suggestedName
+              : deriveActivityName(input)
+        }
+      : {})
+  };
+}
+
+async function resolveActivityInput(
+  userId: string | null,
+  input: AiActivityEstimateInput
+): Promise<AiActivityEstimateInput> {
+  if (input.weightKg !== undefined) {
+    return input;
+  }
+
+  if (!userId) {
+    return input;
+  }
+
+  try {
+    const profile = await prisma.profile.findUnique({
+      where: { userId },
+      select: { weightKg: true }
+    });
+
+    if (profile?.weightKg !== null && profile?.weightKg !== undefined) {
+      return { ...input, weightKg: profile.weightKg };
+    }
+  } catch {
+    // ignore profile lookup issues
+  }
+
+  return input;
 }
 
 async function getDailyCounts(
@@ -307,14 +525,9 @@ async function runAiRequest<T>(
       outputText = await provider.generateText(context.prompt);
     }
 
-    let parsedJson: unknown;
-    try {
-      parsedJson = JSON.parse(outputText);
-    } catch {
-      throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
-    }
-
-    const parsed = context.schema.safeParse(parsedJson);
+    const parsedJson = parseJsonOutput(outputText);
+    const prepared = context.preProcess ? context.preProcess(parsedJson) : parsedJson;
+    const parsed = context.schema.safeParse(prepared);
     if (!parsed.success) {
       throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
     }
@@ -341,6 +554,34 @@ async function runAiRequest<T>(
   }
 }
 
+function parseJsonOutput(outputText: string) {
+  let candidate = outputText.trim();
+  if (!candidate) {
+    throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
+  }
+
+  const fenced = candidate.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  if (fenced?.[1]) {
+    candidate = fenced[1].trim();
+  }
+
+  try {
+    return JSON.parse(candidate);
+  } catch {
+    const firstBrace = candidate.indexOf('{');
+    const lastBrace = candidate.lastIndexOf('}');
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      const slice = candidate.slice(firstBrace, lastBrace + 1);
+      try {
+        return JSON.parse(slice);
+      } catch {
+        // fallthrough
+      }
+    }
+    throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
+  }
+}
+
 export function createAiService(options: AiServiceOptions = {}) {
   const provider = options.provider ?? defaultProvider;
   const cache = options.cache ?? defaultCache;
@@ -355,6 +596,9 @@ export function createAiService(options: AiServiceOptions = {}) {
 
   return {
     async insights(userId: string | null, input: AiInsightsInput): Promise<AiInsightsResponse> {
+      if (isLowDataInsights(input)) {
+        return applyInsightsReplacements(lowDataInsightsResponse());
+      }
       const prompt = buildInsightsPrompt(input);
       return runAiRequest<AiInsightsResponse>(provider, cache, nowProvider, limits, {
         userId,
@@ -364,6 +608,7 @@ export function createAiService(options: AiServiceOptions = {}) {
         schema: AiInsightsResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
         isEstimate: false,
+        preProcess: normalizeInsightsResponse,
         postProcess: (value) => applyInsightsReplacements(value as AiInsightsResponse)
       });
     },
@@ -372,15 +617,18 @@ export function createAiService(options: AiServiceOptions = {}) {
       userId: string | null,
       input: AiActivityEstimateInput
     ): Promise<AiActivityEstimateResponse> {
-      const prompt = buildActivityPrompt(input);
+      const resolvedInput = await resolveActivityInput(userId, input);
+      const prompt = buildActivityPrompt(resolvedInput);
       return runAiRequest<AiActivityEstimateResponse>(provider, cache, nowProvider, limits, {
         userId,
         kind: 'ACTIVITY',
         prompt,
-        cacheInput: input,
+        cacheInput: resolvedInput,
         schema: AiActivityEstimateResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
-        isEstimate: true
+        isEstimate: true,
+        postProcess: (value) =>
+          sanitizeActivityResponse(resolvedInput, value as AiActivityEstimateResponse)
       });
     },
 
@@ -396,7 +644,8 @@ export function createAiService(options: AiServiceOptions = {}) {
         cacheInput: input,
         schema: AiFoodDescribeResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
-        isEstimate: true
+        isEstimate: true,
+        postProcess: (value) => sanitizeMealResponse(input, value as AiFoodDescribeResponse)
       });
     },
 
@@ -412,7 +661,8 @@ export function createAiService(options: AiServiceOptions = {}) {
         cacheInput: input,
         schema: AiFoodDescribeResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
-        isEstimate: true
+        isEstimate: true,
+        postProcess: (value) => sanitizeMealResponse(input, value as AiFoodDescribeResponse)
       });
     },
 
@@ -447,7 +697,10 @@ export function createAiService(options: AiServiceOptions = {}) {
         throw new AiServiceError('AI_BAD_OUTPUT', 502, 'Invalid AI response');
       }
 
-      return response as AiFoodDescribeResponse;
+      return sanitizeMealResponse(
+        { text: response.parsed ?? response.mealName ?? 'Meal', locale: input.locale },
+        response as AiFoodDescribeResponse
+      );
     },
 
     async bodyfatPhoto(

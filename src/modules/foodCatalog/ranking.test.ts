@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { score } from './ranking';
+import { score, scoreWithQuery } from './ranking';
 import { mergeAndRank } from './service';
 import type { FoodCatalogItem } from './types';
 
@@ -74,10 +74,73 @@ describe('food catalog ranking', () => {
       isEstimate: true
     });
 
-    const results = mergeAndRank([itemA, itemB, itemC, itemD], 10);
+    const results = mergeAndRank([itemA, itemB, itemC, itemD], 10, 'chicken');
 
     expect(results).toHaveLength(2);
     expect(results.find((item) => item.barcode === '111')?.id).toBe('1');
     expect(results.find((item) => item.name.startsWith('Rice'))?.id).toBe('3');
+  });
+
+  it('ranks plain strawberry above branded products', () => {
+    const plain = buildItem({
+      id: '1',
+      name: 'Strawberry, raw',
+      brand: null,
+      source: 'INTERNAL',
+      quality: 'HIGH',
+      isEstimate: false
+    });
+    const branded = buildItem({
+      id: '2',
+      name: 'Strawberry Protein Bar',
+      brand: 'BrandCo',
+      source: 'OFF',
+      quality: 'MED',
+      isEstimate: false
+    });
+
+    const results = mergeAndRank([branded, plain], 2, 'strawberry');
+    expect(results[0].id).toBe('1');
+  });
+
+  it('ranks plain chicken breast above prepared meals', () => {
+    const plain = buildItem({
+      id: '1',
+      name: 'Chicken Breast, raw',
+      brand: null,
+      source: 'INTERNAL',
+      quality: 'HIGH',
+      isEstimate: false
+    });
+    const prepared = buildItem({
+      id: '2',
+      name: 'Chicken Breast Meal Prep Pack',
+      brand: 'PrepCo',
+      source: 'OFF',
+      quality: 'MED',
+      isEstimate: false
+    });
+
+    const results = mergeAndRank([prepared, plain], 2, 'chicken breast');
+    expect(results[0].id).toBe('1');
+  });
+
+  it('boosts exact query matches', () => {
+    const exact = buildItem({
+      id: '1',
+      name: 'Rice',
+      brand: null,
+      source: 'INTERNAL',
+      quality: 'MED'
+    });
+    const prefix = buildItem({
+      id: '2',
+      name: 'Rice cooked',
+      brand: null,
+      source: 'INTERNAL',
+      quality: 'MED'
+    });
+
+    expect(scoreWithQuery(exact, 'rice')).toBeGreaterThan(scoreWithQuery(prefix, 'rice'));
   });
 });

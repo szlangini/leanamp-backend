@@ -57,17 +57,31 @@ export const AiInsightsResponseSchema = z
   })
   .strict();
 
-export const AiActivityEstimateInputSchema = z.object({
+const AiActivityEstimateStructuredSchema = z.object({
   type: z.string().min(2),
   minutes: z.number().int().nonnegative(),
   intensity: z.enum(['low', 'moderate', 'high']),
+  weightKg: z.number().optional(),
+  description: TextSchema.optional()
+}).strict();
+
+const AiActivityEstimateTextInputSchema = z.object({
+  description: TextSchema,
+  minutes: z.number().int().nonnegative().optional(),
+  intensity: z.enum(['low', 'moderate', 'high']).optional(),
   weightKg: z.number().optional()
-});
+}).strict();
+
+export const AiActivityEstimateInputSchema = z.union([
+  AiActivityEstimateStructuredSchema,
+  AiActivityEstimateTextInputSchema
+]);
 
 export const AiActivityEstimateResponseSchema = z
   .object({
     status: z.literal('OK'),
     kcal: z.number().int(),
+    suggestedName: z.string().min(1).optional(),
     confidence: z.number().min(0).max(1),
     notes: z.string(),
     disclaimer: z.literal('ESTIMATE')

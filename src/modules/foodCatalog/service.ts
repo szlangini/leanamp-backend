@@ -5,7 +5,7 @@ import { createOpenFoodFactsProvider } from './providers/openFoodFacts';
 import { createUsdaFdcProvider } from './providers/usdaFdc';
 import type { FoodCatalogProvider } from './providers/types';
 import type { FoodCatalogCandidate, FoodCatalogItem } from './types';
-import { compareForPick, compareRank } from './ranking';
+import { compareForPick, compareRank, normalizeNameKey } from './ranking';
 import { providerGuard, ProviderUnavailable } from './providerGuard';
 
 const defaultProviders = {
@@ -13,7 +13,6 @@ const defaultProviders = {
   usda: createUsdaFdcProvider()
 };
 
-const STOP_WORDS = new Set(['the', 'and', 'with', 'of', 'a', 'an', 'in', 'for', 'to']);
 const TTL_MS = env.FOOD_DBITEM_TTL_HOURS * 60 * 60 * 1000;
 
 type CatalogProviders = {
@@ -46,19 +45,6 @@ function toResponseItem(item: FoodDbItem): FoodCatalogItem {
     isEstimate: item.isEstimate,
     quality: item.quality as FoodCatalogItem['quality']
   };
-}
-
-export function normalizeNameKey(name: string) {
-  const cleaned = name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .filter((token) => !STOP_WORDS.has(token))
-    .join(' ')
-    .trim();
-
-  return cleaned;
 }
 
 function isFresh(item: FoodDbItem, now = Date.now()) {
@@ -158,19 +144,23 @@ function getProviders(options: CatalogOptions) {
   };
 }
 
-function pickBest(current: FoodCatalogItem | undefined, next: FoodCatalogItem) {
+function pickBest(
+  current: FoodCatalogItem | undefined,
+  next: FoodCatalogItem,
+  query?: string
+) {
   if (!current) return next;
-  return compareForPick(next, current) < 0 ? next : current;
+  return compareForPick(next, current, query) < 0 ? next : current;
 }
 
-export function mergeAndRank(items: FoodCatalogItem[], limit: number) {
+export function mergeAndRank(items: FoodCatalogItem[], limit: number, query?: string) {
   const byBarcode = new Map<string, FoodCatalogItem>();
   const withoutBarcode: FoodCatalogItem[] = [];
 
   for (const item of items) {
     if (item.barcode) {
       const key = item.barcode;
-      byBarcode.set(key, pickBest(byBarcode.get(key), item));
+      byBarcode.set(key, pickBest(byBarcode.get(key), item, query));
     } else {
       withoutBarcode.push(item);
     }
@@ -181,17 +171,17 @@ export function mergeAndRank(items: FoodCatalogItem[], limit: number) {
 
   for (const item of barcodeMerged) {
     const nameKey = normalizeNameKey(item.name) || item.id;
-    byName.set(nameKey, pickBest(byName.get(nameKey), item));
+    byName.set(nameKey, pickBest(byName.get(nameKey), item, query));
   }
 
   const results = Array.from(byName.values());
-  results.sort(compareRank);
+  results.sort((a, b) => compareRank(a, b, query));
   return results.slice(0, limit);
 }
 
 async function searchInternalFallback(name: string) {
   const candidates = await searchDbItems(name, 10, 'INTERNAL');
-  const ranked = mergeAndRank(candidates.map(toResponseItem), 1);
+  const ranked = mergeAndRank(candidates.map(toResponseItem), 1, name);
   return ranked[0] ?? null;
 }
 
@@ -207,16 +197,43 @@ export async function searchCatalog(
     options.cacheOnlyOnProviderDown ?? env.FOOD_CATALOG_CACHE_ONLY_ON_PROVIDER_DOWN;
   const providers = getProviders(options);
 
-  const dbItems = await searchDbItems(query, limit);
-  const baseItems = dbItems.map(toResponseItem);
-  let allItems = [...baseItems];
-  let ranked = mergeAndRank(allItems, limit);
+  const internalItems = await searchDbItems(query, limit, 'INTERNAL');
+  const usdaCached = enableUsda ? await searchDbItems(query, limit, 'USDA') : [];
+  const offCached = enableOff ? await searchDbItems(query, limit, 'OFF') : [];
+
+  let allItems = [
+    ...internalItems.map(toResponseItem),
+    ...(internalOnly ? [] : usdaCached.map(toResponseItem)),
+    ...(internalOnly ? [] : offCached.map(toResponseItem))
+  ];
+  let ranked = mergeAndRank(allItems, limit, query);
 
   if (internalOnly) {
     return ranked;
   }
 
-  let remaining = Math.max(0, limit - ranked.length);
+  const usdaDesired = Math.min(limit, 5);
+
+  if (enableUsda && usdaCached.length < usdaDesired) {
+    try {
+      const usdaItems = await providerGuard.guardedCall('usda', (signal) =>
+        providers.usda.search(query, usdaDesired - usdaCached.length, signal)
+      );
+      const filtered = usdaItems.filter((item) => item.externalId);
+      if (filtered.length > 0) {
+        const upserted = await upsertProviderItems(filtered);
+        allItems = allItems.concat(upserted.map(toResponseItem));
+        ranked = mergeAndRank(allItems, limit, query);
+      }
+    } catch (error) {
+      if (!(error instanceof ProviderUnavailable) || !cacheOnlyOnProviderDown) {
+        throw error;
+      }
+      return ranked;
+    }
+  }
+
+  const remaining = Math.max(0, limit - ranked.length);
 
   if (enableOff && remaining > 0) {
     try {
@@ -227,8 +244,7 @@ export async function searchCatalog(
       if (filtered.length > 0) {
         const upserted = await upsertProviderItems(filtered);
         allItems = allItems.concat(upserted.map(toResponseItem));
-        ranked = mergeAndRank(allItems, limit);
-        remaining = Math.max(0, limit - ranked.length);
+        ranked = mergeAndRank(allItems, limit, query);
       }
     } catch (error) {
       if (!(error instanceof ProviderUnavailable) || !cacheOnlyOnProviderDown) {
@@ -238,25 +254,7 @@ export async function searchCatalog(
     }
   }
 
-  if (enableUsda && remaining > 0) {
-    try {
-      const usdaItems = await providerGuard.guardedCall('usda', (signal) =>
-        providers.usda.search(query, remaining, signal)
-      );
-      const filtered = usdaItems.filter((item) => item.externalId);
-      if (filtered.length > 0) {
-        const upserted = await upsertProviderItems(filtered);
-        allItems = allItems.concat(upserted.map(toResponseItem));
-      }
-    } catch (error) {
-      if (!(error instanceof ProviderUnavailable) || !cacheOnlyOnProviderDown) {
-        throw error;
-      }
-      return ranked;
-    }
-  }
-
-  return mergeAndRank(allItems, limit);
+  return mergeAndRank(allItems, limit, query);
 }
 
 export async function getByBarcode(

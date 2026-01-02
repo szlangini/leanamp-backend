@@ -26,8 +26,10 @@ export function buildActivityPrompt(input: AiActivityEstimateInput) {
   return [
     baseRules,
     'If weightKg is missing, assume 80kg and mention in notes.',
+    'If minutes or intensity are missing, infer from description; if unclear, assume 30 minutes and moderate intensity and mention in notes.',
+    'If description is provided, include suggestedName (short, TitleCase).',
     'Return schema:',
-    '{"status":"OK","kcal":int,"confidence":0..1,"notes":"string","disclaimer":"ESTIMATE"}',
+    '{"status":"OK","kcal":int,"suggestedName":"string?","confidence":0..1,"notes":"string","disclaimer":"ESTIMATE"}',
     'Input JSON:',
     JSON.stringify(input)
   ].join('\n');
