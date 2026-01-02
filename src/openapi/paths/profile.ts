@@ -44,7 +44,9 @@ const ProfileResponseSchema = z.object({
   kcalTargetOverride: z.number().int().nullable(),
   dietPreference: DietPreferenceSchema,
   timezone: z.string().nullable(),
-  hasOnboarded: z.boolean()
+  hasOnboarded: z.boolean(),
+  onboardingStep: z.number().int().nullable(),
+  onboardingCompletedAt: DateTimeSchema.nullable()
 });
 
 export function registerProfilePaths(

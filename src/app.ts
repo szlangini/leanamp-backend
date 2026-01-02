@@ -8,9 +8,11 @@ import foodRoutes from './modules/food/routes';
 import foodCatalogRoutes from './modules/foodCatalog/routes';
 import waterRoutes from './modules/water/routes';
 import weightRoutes from './modules/weights/routes';
+import stepsRoutes from './modules/steps/routes';
 import trainingRoutes from './modules/training/routes';
 import analyticsRoutes from './modules/analytics/routes';
 import aiRoutes from './modules/ai/routes';
+import onboardingRoutes from './modules/onboarding/routes';
 import openapiPlugin from './plugins/openapi';
 import rateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
@@ -104,6 +106,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
   });
   app.register(waterRoutes, { prefix: '/water' });
   app.register(weightRoutes, { prefix: '/weights' });
+  app.register(stepsRoutes, { prefix: '/steps' });
   app.register(trainingRoutes, { prefix: '/training' });
   app.register(analyticsRoutes, { prefix: '/analytics' });
   app.register(aiRoutes, {
@@ -113,6 +116,7 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
     limits: options.ai?.limits,
     now: options.ai?.now
   });
+  app.register(onboardingRoutes);
   app.register(openapiPlugin);
 
   return app;

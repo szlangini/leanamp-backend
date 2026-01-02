@@ -253,6 +253,70 @@ function lowDataInsightsResponse(): AiInsightsResponse {
   };
 }
 
+function coerceNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+}
+
+function normalizeActivityResponse(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+  const value = payload as Record<string, unknown>;
+  const kcal = coerceNumber(value.kcal);
+  const confidence = coerceNumber(value.confidence);
+  const suggestedName =
+    typeof value.suggestedName === 'string' && value.suggestedName.trim().length > 0
+      ? value.suggestedName.trim()
+      : undefined;
+
+  return {
+    status: typeof value.status === 'string' ? value.status : 'OK',
+    kcal: kcal !== undefined ? Math.round(kcal) : value.kcal,
+    confidence: confidence !== undefined ? Math.min(1, Math.max(0, confidence)) : value.confidence,
+    notes: typeof value.notes === 'string' ? value.notes : '',
+    disclaimer: typeof value.disclaimer === 'string' ? value.disclaimer : 'ESTIMATE',
+    ...(suggestedName ? { suggestedName } : {})
+  };
+}
+
+function normalizeFoodResponse(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') {
+    return payload;
+  }
+  const value = payload as Record<string, unknown>;
+  const kcal = coerceNumber(value.kcal);
+  const protein = coerceNumber(value.protein);
+  const fat = coerceNumber(value.fat);
+  const carbs = coerceNumber(value.carbs);
+  const fiber = value.fiber === null ? null : coerceNumber(value.fiber);
+  const questions = Array.isArray(value.questions)
+    ? value.questions.filter((item) => typeof item === 'string')
+    : [];
+
+  return {
+    status: typeof value.status === 'string' ? value.status : 'OK',
+    mealName: typeof value.mealName === 'string' ? value.mealName : '',
+    parsed: typeof value.parsed === 'string' ? value.parsed : '',
+    kcal: kcal !== undefined ? Math.round(kcal) : value.kcal,
+    protein: protein ?? value.protein,
+    fat: fat ?? value.fat,
+    carbs: carbs ?? value.carbs,
+    fiber: fiber ?? null,
+    confidence: coerceNumber(value.confidence) ?? value.confidence,
+    questions,
+    disclaimer: typeof value.disclaimer === 'string' ? value.disclaimer : 'ESTIMATE'
+  };
+}
+
 const MEAL_NAME_STOP = new Set(['and', 'with', 'of', 'a', 'an', 'the', 'in', 'on']);
 const ACTIVITY_NAME_STOP = new Set(['and', 'with', 'of', 'a', 'an', 'the', 'in', 'on']);
 
@@ -627,6 +691,7 @@ export function createAiService(options: AiServiceOptions = {}) {
         schema: AiActivityEstimateResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
         isEstimate: true,
+        preProcess: normalizeActivityResponse,
         postProcess: (value) =>
           sanitizeActivityResponse(resolvedInput, value as AiActivityEstimateResponse)
       });
@@ -645,6 +710,7 @@ export function createAiService(options: AiServiceOptions = {}) {
         schema: AiFoodDescribeResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
         isEstimate: true,
+        preProcess: normalizeFoodResponse,
         postProcess: (value) => sanitizeMealResponse(input, value as AiFoodDescribeResponse)
       });
     },
@@ -662,6 +728,7 @@ export function createAiService(options: AiServiceOptions = {}) {
         schema: AiFoodDescribeResponseSchema,
         model: env.GEMINI_MODEL_TEXT,
         isEstimate: true,
+        preProcess: normalizeFoodResponse,
         postProcess: (value) => sanitizeMealResponse(input, value as AiFoodDescribeResponse)
       });
     },

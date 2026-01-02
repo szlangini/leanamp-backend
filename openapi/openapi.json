@@ -1814,6 +1814,107 @@
         }
       }
     },
+    "/steps": {
+      "get": {
+        "tags": [
+          "steps"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepsList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "steps"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dateISO": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "steps": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "dateISO",
+                  "steps"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StepsUpsertResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/training/plan": {
       "get": {
         "tags": [
@@ -4180,6 +4281,76 @@
           }
         }
       }
+    },
+    "/onboarding": {
+      "get": {
+        "tags": [
+          "onboarding"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingState"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "onboarding"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hasOnboarded": {
+                    "type": "boolean"
+                  },
+                  "currentStep": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4
+                  }
+                },
+                "required": [
+                  "hasOnboarded"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingPostResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4356,6 +4527,15 @@
           },
           "hasOnboarded": {
             "type": "boolean"
+          },
+          "onboardingStep": {
+            "type": "integer",
+            "nullable": true
+          },
+          "onboardingCompletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
           }
         },
         "required": [
@@ -4391,7 +4571,9 @@
           "kcalTargetOverride",
           "dietPreference",
           "timezone",
-          "hasOnboarded"
+          "hasOnboarded",
+          "onboardingStep",
+          "onboardingCompletedAt"
         ],
         "additionalProperties": false
       },
@@ -4767,6 +4949,88 @@
           "dateISO",
           "weightKg",
           "note"
+        ],
+        "additionalProperties": false
+      },
+      "StepItem": {
+        "type": "object",
+        "properties": {
+          "dateISO": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "steps": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "dateISO",
+          "steps"
+        ],
+        "additionalProperties": false
+      },
+      "StepsList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dateISO": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                },
+                "steps": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "dateISO",
+                "steps"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "StepsUpsertResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK"
+            ]
+          },
+          "item": {
+            "type": "object",
+            "properties": {
+              "dateISO": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "steps": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "dateISO",
+              "steps"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "status",
+          "item"
         ],
         "additionalProperties": false
       },
@@ -5390,6 +5654,74 @@
         "required": [
           "rangeDays",
           "topDeltas"
+        ],
+        "additionalProperties": false
+      },
+      "OnboardingState": {
+        "type": "object",
+        "properties": {
+          "hasOnboarded": {
+            "type": "boolean"
+          },
+          "currentStep": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "hasOnboarded"
+        ],
+        "additionalProperties": false
+      },
+      "OnboardingPostResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OK"
+            ]
+          },
+          "state": {
+            "type": "object",
+            "properties": {
+              "hasOnboarded": {
+                "type": "boolean"
+              },
+              "currentStep": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 4
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "required": [
+              "hasOnboarded"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "status",
+          "state"
         ],
         "additionalProperties": false
       }

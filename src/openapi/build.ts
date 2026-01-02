@@ -9,6 +9,8 @@ import { registerAnalyticsPaths } from './paths/analytics';
 import { registerAuthPaths } from './paths/auth';
 import { registerAiPaths } from './paths/ai';
 import { registerWeightsPaths } from './paths/weights';
+import { registerStepsPaths } from './paths/steps';
+import { registerOnboardingPaths } from './paths/onboarding';
 
 function getPackageVersion() {
   try {
@@ -29,9 +31,11 @@ export function buildOpenApi() {
   registerFoodPaths(registry, paths);
   registerWaterPaths(registry, paths);
   registerWeightsPaths(registry, paths);
+  registerStepsPaths(registry, paths);
   registerTrainingPaths(registry, paths);
   registerAnalyticsPaths(registry, paths);
   registerAiPaths(registry, paths);
+  registerOnboardingPaths(registry, paths);
 
   return {
     openapi: '3.1.0',

@@ -100,6 +100,7 @@ model User {
   mealGroups       MealGroup[]
   foodEntries      FoodEntry[]
   waterLogs        WaterLog[]
+  stepLogs         StepLog[]
   dayPlans         DayPlan[]
   plannedExercises PlannedExercise[]
   topSetEntries    TopSetEntry[]
@@ -143,6 +144,8 @@ model Profile {
   dietPreference             DietPreference
   timezone                   String?
   hasOnboarded               Boolean        @default(false)
+  onboardingStep             Int?
+  onboardingCompletedAt      DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -222,6 +225,20 @@ model WaterLog {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dateISO])
+}
+
+model StepLog {
+  id        String   @id @default(uuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  dateISO   DateTime @db.Date
+  steps     Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateISO])
+  @@index([userId, dateISO])
 }
 
 model DayPlan {
