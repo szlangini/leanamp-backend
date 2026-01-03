@@ -35,6 +35,7 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default('http://localhost:19006,http://localhost:3000'),
+  ALLOWED_ORIGINS: z.string().optional().default(''),
   RATE_LIMIT_GLOBAL_PER_MIN: numberSchema(120),
   RATE_LIMIT_AUTH_START_PER_MIN: numberSchema(5),
   RATE_LIMIT_AUTH_VERIFY_PER_MIN: numberSchema(10),
@@ -70,6 +71,8 @@ const envSchema = z.object({
   OTP_TTL_SECONDS: numberSchema(600),
   DEV_OTP_ECHO: booleanSchema(true),
   AUTH_DEV_DEFAULT_EMAIL: z.string().min(1).default('a@a.de'),
+  SUPABASE_URL: z.string().optional().default(''),
+  SUPABASE_PUBLISHABLE_KEY: z.string().optional().default(''),
   OFF_BASE_URL: z.string().min(1).default('https://world.openfoodfacts.org'),
   OFF_USER_AGENT: z
     .string()
@@ -97,6 +100,19 @@ if (parsed.data.FOOD_CATALOG_ENABLE_USDA && !parsed.data.USDA_API_KEY) {
 
 if (parsed.data.AI_ENABLED && !parsed.data.GEMINI_API_KEY) {
   throw new Error('GEMINI_API_KEY is required when AI_ENABLED=true');
+}
+
+if (parsed.data.NODE_ENV === 'production' && parsed.data.AUTH_MODE === 'dev') {
+  throw new Error('AUTH_MODE=dev is not allowed in production');
+}
+
+if (parsed.data.AUTH_MODE !== 'dev') {
+  if (!parsed.data.SUPABASE_URL) {
+    throw new Error('SUPABASE_URL is required when AUTH_MODE is not dev');
+  }
+  if (!parsed.data.SUPABASE_PUBLISHABLE_KEY) {
+    throw new Error('SUPABASE_PUBLISHABLE_KEY is required when AUTH_MODE is not dev');
+  }
 }
 
 export const env = parsed.data;

@@ -12,18 +12,26 @@
 
 ## Environment Variables
 
-- DATABASE_URL
+Required
 - NODE_ENV=production
+- PORT (Render sets this automatically)
+- DATABASE_URL
+- DIRECT_URL
 - AUTH_MODE=jwt
-- JWT_ACCESS_SECRET
-- JWT_REFRESH_SECRET
-- JWT_ACCESS_TTL_SECONDS
-- JWT_REFRESH_TTL_SECONDS
-- OTP_TTL_SECONDS
+- SUPABASE_URL
+- SUPABASE_PUBLISHABLE_KEY
+
+Optional / feature flags
+- AI_ENABLED=false (set true to enable)
+- GEMINI_API_KEY (required if AI_ENABLED=true)
+- FOOD_CATALOG_ENABLE_USDA=false (set true to enable)
+- USDA_API_KEY (required if FOOD_CATALOG_ENABLE_USDA=true)
 - OPENAPI_ENABLED=false
 - DEV_OTP_ECHO=false
+- CORS_ENABLED=true
+- ALLOWED_ORIGINS="https://your-frontend.example"
 
 ## Notes
 
-- Use the Render Postgres internal URL for DATABASE_URL.
+- Use the Render Postgres internal URL for DATABASE_URL and DIRECT_URL.
 - Secrets must be configured in Render, not in the repo.

@@ -16,6 +16,7 @@ import onboardingRoutes from './modules/onboarding/routes';
 import openapiPlugin from './plugins/openapi';
 import rateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import type { FoodCatalogProvider } from './modules/foodCatalog/providers/types';
 import type { AiProvider } from './modules/ai/service';
 
@@ -65,8 +66,10 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
 
   const app = fastify({ logger, trustProxy: env.TRUST_PROXY });
 
-  if (env.CORS_ENABLED) {
-    const allowedOrigins = env.CORS_ORIGINS.split(',')
+  app.register(helmet);
+
+  if (env.NODE_ENV === 'production') {
+    const allowedOrigins = env.ALLOWED_ORIGINS.split(',')
       .map((value) => value.trim())
       .filter(Boolean);
 
@@ -76,18 +79,24 @@ export function buildApp(options: BuildAppOptions = {}): FastifyInstance {
           callback(null, true);
           return;
         }
+        if (allowedOrigins.length === 0) {
+          callback(null, false);
+          return;
+        }
         callback(null, allowedOrigins.includes(origin));
       },
       credentials: false
     });
+  } else {
+    app.register(cors, {
+      origin: true,
+      credentials: false
+    });
   }
-
-  const globalLimit =
-    env.NODE_ENV === 'test' ? 10000 : env.RATE_LIMIT_GLOBAL_PER_MIN;
 
   app.register(rateLimit, {
     global: true,
-    max: globalLimit,
+    max: env.NODE_ENV === 'test' ? 10000 : 120,
     timeWindow: '1 minute',
     keyGenerator: (request) => request.ip
   });

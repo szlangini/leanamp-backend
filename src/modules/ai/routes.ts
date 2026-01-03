@@ -41,13 +41,8 @@ export default async function aiRoutes(
     }
   });
 
-  const standardRateLimit = {
-    max: env.NODE_ENV === 'test' ? 1000 : env.RATE_LIMIT_AI_PER_MIN,
-    timeWindow: '1 minute'
-  };
-
-  const heavyRateLimit = {
-    max: env.NODE_ENV === 'test' ? 1000 : env.RATE_LIMIT_AI_HEAVY_PER_MIN,
+  const aiRateLimit = {
+    max: env.NODE_ENV === 'test' ? 1000 : 10,
     timeWindow: '1 minute'
   };
 
@@ -55,7 +50,7 @@ export default async function aiRoutes(
     '/insights',
     {
       config: {
-        rateLimit: heavyRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
@@ -80,7 +75,7 @@ export default async function aiRoutes(
     '/activity/estimate',
     {
       config: {
-        rateLimit: standardRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
@@ -105,7 +100,7 @@ export default async function aiRoutes(
     '/food/describe',
     {
       config: {
-        rateLimit: standardRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
@@ -134,7 +129,7 @@ export default async function aiRoutes(
     '/voice-to-meal',
     {
       config: {
-        rateLimit: standardRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
@@ -163,7 +158,7 @@ export default async function aiRoutes(
     '/food/photo',
     {
       config: {
-        rateLimit: standardRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
@@ -188,7 +183,7 @@ export default async function aiRoutes(
     '/bodyfat/photos',
     {
       config: {
-        rateLimit: standardRateLimit
+        rateLimit: aiRateLimit
       }
     },
     async (request, reply) => {
